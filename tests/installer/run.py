@@ -58,12 +58,12 @@ try:
     wait_for(lambda:text_present(win,'Your stream starts here.'))
     capture(win,'01-welcome')
     # The branded surface should be dark; native high-contrast mode remains supported.
-    click(win,'Next >');wait_for(lambda:text_present(win,'I &accept the agreement') or text_present(win,'I accept the agreement'))
-    capture(win,'02-license');click(win,'I accept the agreement');click(win,'Next >')
+    click(win,'Next');wait_for(lambda:text_present(win,'I &accept the agreement') or text_present(win,'I accept the agreement'))
+    capture(win,'02-license');click(win,'I accept the agreement');click(win,'Next')
     wait_for(lambda:text_present(win,'Choose your install location'));capture(win,'03-location')
     assert text_present(win,str(install_dir)), 'Chosen install folder is not shown'
-    click(win,'Next >');wait_for(lambda:text_present(win,'Select Additional Tasks'))
-    capture(win,'04-shortcuts');click(win,'Next >')
+    click(win,'Next');wait_for(lambda:text_present(win,'Select Additional Tasks'))
+    capture(win,'04-shortcuts');click(win,'Next')
     wait_for(lambda:text_present(win,'Ready to install FDGCast'));capture(win,'05-ready')
     click(win,'Install');wait_for(lambda:text_present(win,'Installing FDGCast Companion'),seconds=15)
     capture(win,'06-installing')

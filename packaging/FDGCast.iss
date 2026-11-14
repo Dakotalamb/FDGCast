@@ -71,7 +71,7 @@ Filename: "https://hub.forgeddestinygaming.com/fdgcast"; Description: "Open the 
 
 [Messages]
 WelcomeLabel1=Your stream starts here.
-WelcomeLabel2=FDGCast brings your streaming controls, chats and vertical layouts together.%n%nThis installer includes:%n  FDGCast desktop Companion%n  FDGCast plugin for OBS Studio%n%nClose OBS and Companion before continuing.%nYour saved settings stay on this computer.
+WelcomeLabel2=Version 1.0.5-rc.1 - Installer preview%n%nFDGCast brings your streaming controls, chats and vertical layouts together.%n%nThis installer includes:%n  FDGCast desktop Companion%n  FDGCast plugin for OBS Studio%n%nClose OBS and Companion before continuing.%nYour saved settings stay on this computer.
 FinishedHeadingLabel=FDGCast is ready.
 FinishedLabel=Next steps:%n%n1. Reopen OBS Studio.%n2. Open FDGCast Companion and go to Connections.%n3. Connect OBS and sync your platform accounts.%n%nCompanion must stay open for chat and activity.%nNothing starts streaming automatically.
 BeveledLabel=FORGED DESTINY GAMING  /  1.0.5-rc.1
