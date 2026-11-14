@@ -86,5 +86,11 @@ try:
     process.wait(timeout=30)
     assert canary.read_text(encoding='utf-8')=='keep-user-settings'
     print('PASS: real branded wizard, license, install location, optional shortcuts, live progress, finish actions, install payload, saved-setting preservation and upgrade messaging.')
+except Exception:
+    current=wizard()
+    if current:
+        capture(current,'failure-wizard')
+    (out/'failure-windows.txt').write_text('\n'.join(w.window_text() for w in Desktop(backend='win32').windows(visible_only=True)),encoding='utf-8')
+    raise
 finally:
     canary.unlink(missing_ok=True)
