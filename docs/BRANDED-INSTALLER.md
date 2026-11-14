@@ -1,6 +1,6 @@
 # Branded installer preview
 
-The 1.0.5-rc.1 preview uses native Inno Setup dark styling with FDGCast charcoal,
+The 1.0.5-rc.2 preview uses native Inno Setup dark styling with FDGCast charcoal,
 orange accents, original logo artwork, plain-language welcome/upgrade copy,
 readable license and setup pages, real file-phase progress, and a connection
 guide link on the finish screen. Desktop shortcuts and launching Companion are

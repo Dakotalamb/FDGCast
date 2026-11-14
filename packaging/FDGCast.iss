@@ -3,9 +3,9 @@
 [Setup]
 AppId={{C47C9B69-A4E0-4F8B-8D90-6D4CCF944210}
 AppName=FDGCast
-AppVersion=1.0.5-rc.1
+AppVersion=1.0.5-rc.2
 VersionInfoVersion=1.0.5.0
-AppVerName=FDGCast 1.0.5-rc.1
+AppVerName=FDGCast 1.0.5-rc.2
 AppPublisher=Forged Destiny Gaming
 AppPublisherURL=https://forgeddestinygaming.com/
 SetupIconFile={#SourcePath}FDGCast.ico
@@ -13,7 +13,7 @@ UninstallDisplayIcon={app}\FDGCast.exe
 DefaultDirName={autopf}\Forged Destiny Gaming\FDGCast
 DefaultGroupName=FDGCast
 OutputDir={#SourcePath}..\release
-OutputBaseFilename=FDGCast-1.0.5-rc.1-win-x64-setup
+OutputBaseFilename=FDGCast-1.0.5-rc.2-win-x64-setup
 Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=admin
@@ -71,10 +71,10 @@ Filename: "https://hub.forgeddestinygaming.com/fdgcast"; Description: "Open the 
 
 [Messages]
 WelcomeLabel1=Your stream starts here.
-WelcomeLabel2=Version 1.0.5-rc.1 - Installer preview%n%nFDGCast brings your streaming controls, chats and vertical layouts together.%n%nThis installer includes:%n  FDGCast desktop Companion%n  FDGCast plugin for OBS Studio%n%nClose OBS and Companion before continuing.%nYour saved settings stay on this computer.
+WelcomeLabel2=Version 1.0.5-rc.2 - Installer preview%n%nFDGCast brings your streaming controls, chats and vertical layouts together.%n%nThis installer includes:%n  FDGCast desktop Companion%n  FDGCast plugin for OBS Studio%n%nClose OBS and Companion before continuing.%nYour saved settings stay on this computer.
 FinishedHeadingLabel=FDGCast is ready.
 FinishedLabel=Next steps:%n%n1. Reopen OBS Studio.%n2. Open FDGCast Companion and go to Connections.%n3. Connect OBS and sync your platform accounts.%n%nCompanion must stay open for chat and activity.%nNothing starts streaming automatically.
-BeveledLabel=FORGED DESTINY GAMING  /  1.0.5-rc.1
+BeveledLabel=FORGED DESTINY GAMING  /  1.0.5-rc.2
 SelectTasksLabel2=Choose any optional shortcuts. FDGCast is always available from the Start menu.
 
 [UninstallDelete]
@@ -91,21 +91,43 @@ Type: files; Name: "{autodesktop}\ForgeCast.lnk"
 [Code]
 var
   InstallPhase: String;
+  StageLabel: TNewStaticText;
+  InstallHint: TNewStaticText;
 
 procedure InstallingCompanion();
 begin
   InstallPhase := 'Installing FDGCast Companion...';
+  StageLabel.Caption := InstallPhase;
 end;
 
 procedure InstallingOBSModule();
 begin
   InstallPhase := 'Adding the FDGCast plugin to OBS...';
+  StageLabel.Caption := InstallPhase;
 end;
 
 procedure InitializeWizard();
 var
   PreviousCompanion: String;
 begin
+  StageLabel := TNewStaticText.Create(WizardForm);
+  StageLabel.Parent := WizardForm.StatusLabel.Parent;
+  StageLabel.Left := WizardForm.StatusLabel.Left;
+  StageLabel.Top := WizardForm.StatusLabel.Top;
+  StageLabel.Width := WizardForm.ProgressGauge.Width;
+  StageLabel.Height := ScaleY(32);
+  StageLabel.WordWrap := True;
+  StageLabel.Font.Size := 11;
+  StageLabel.Font.Style := [fsBold];
+  StageLabel.Caption := 'Preparing FDGCast...';
+  InstallHint := TNewStaticText.Create(WizardForm);
+  InstallHint.Parent := WizardForm.ProgressGauge.Parent;
+  InstallHint.Left := WizardForm.ProgressGauge.Left;
+  InstallHint.Top := WizardForm.ProgressGauge.Top + WizardForm.ProgressGauge.Height + ScaleY(18);
+  InstallHint.Width := WizardForm.ProgressGauge.Width;
+  InstallHint.Height := ScaleY(48);
+  InstallHint.WordWrap := True;
+  InstallHint.Caption := 'Setting up Companion and the OBS plugin.' + #13#10 + 'Your saved settings are kept.';
   WizardForm.WelcomeLabel1.Font.Size := 21;
   WizardForm.WelcomeLabel1.Font.Style := [fsBold];
   WizardForm.FinishedHeadingLabel.Font.Size := 21;
@@ -113,9 +135,9 @@ begin
   if RegQueryStringValue(HKLM64, 'Software\Forged Destiny Gaming\FDGCast',
     'CompanionPath', PreviousCompanion) and FileExists(PreviousCompanion) then
   begin
-    WizardForm.WelcomeLabel1.Caption := 'Ready for your next upgrade?';
+    WizardForm.WelcomeLabel1.Caption := 'Updating FDGCast.';
     WizardForm.WelcomeLabel2.Caption :=
-      'Update FDGCast to 1.0.5-rc.1.' + #13#10#13#10 +
+      'Update FDGCast to 1.0.5-rc.2.' + #13#10#13#10 +
       'Your saved connections, layouts and Windows-protected credentials stay on this computer.' + #13#10#13#10 +
       'Close OBS Studio and FDGCast Companion before continuing.' + #13#10#13#10 +
       'Setup updates Companion and the FDGCast OBS plugin together.';
@@ -124,6 +146,11 @@ end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
+  if CurPageID = wpInstalling then
+  begin
+    WizardForm.StatusLabel.Visible := False;
+    WizardForm.FilenameLabel.Visible := False;
+  end;
   if CurPageID = wpSelectDir then
   begin
     WizardForm.PageNameLabel.Caption := 'Choose your install location';
@@ -138,7 +165,9 @@ end;
 
 procedure CurInstallProgressChanged(CurProgress, MaxProgress: Integer);
 begin
-  if InstallPhase <> '' then WizardForm.StatusLabel.Caption := InstallPhase;
+  if InstallPhase <> '' then StageLabel.Caption := InstallPhase;
+  WizardForm.StatusLabel.Visible := False;
+  WizardForm.FilenameLabel.Visible := False;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
@@ -146,6 +175,6 @@ begin
   if CurStep = ssPostInstall then
   begin
     InstallPhase := 'Finishing setup...';
-    WizardForm.StatusLabel.Caption := InstallPhase;
+    StageLabel.Caption := InstallPhase;
   end;
 end;

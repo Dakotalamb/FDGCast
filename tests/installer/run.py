@@ -76,7 +76,7 @@ try:
     assert canary.read_text(encoding='utf-8')=='keep-user-settings'
     # A second launch detects the installed app and explains upgrade preservation.
     process=start();win=wait_for(wizard)
-    wait_for(lambda:text_present(win,'Ready for your next upgrade?'))
+    wait_for(lambda:text_present(win,'Updating FDGCast.'))
     capture(win,'08-upgrade')
     click(win,'Cancel')
     def exit_dialog():
