@@ -12,7 +12,7 @@ $venv = Join-Path $root '.build-venv'
 if (-not (Test-Path $ObsSdkPrefix) -or -not (Test-Path $QtPrefix)) {
   throw 'Provide installed OBS development artifacts and matching Qt6 prefix paths.'
 }
-if (-not (Test-Path $IsccPath)) { throw 'Install Inno Setup 6 and supply -IsccPath if installed elsewhere.' }
+if (-not (Test-Path $IsccPath)) { throw 'Install Inno Setup 6.7.3 or newer and supply -IsccPath if installed elsewhere.' }
 if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) { throw 'CMake is required.' }
 if (-not (Get-Command py -ErrorAction SilentlyContinue)) { throw 'Python 3.11+ with py launcher is required.' }
 
