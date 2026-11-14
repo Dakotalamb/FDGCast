@@ -9,7 +9,27 @@ permissions:
   contents: read
 
 jobs:
+  installer-script-check:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile installer presentation before the full application build
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $iscc = & ./packaging/install-inno.ps1
+          # Compile-only fixtures live on a separate runner and are never uploaded.
+          New-Item -ItemType Directory -Force 'dist/FDGCast','stage/forgecast/bin/64bit','third-party-licenses' | Out-Null
+          Set-Content 'dist/FDGCast/FDGCast.exe' 'compile-only fixture'
+          Set-Content 'stage/forgecast/bin/64bit/forgecast.dll' 'compile-only fixture'
+          Set-Content 'third-party-licenses/README.txt' 'compile-only fixture'
+          $output = Join-Path $env:RUNNER_TEMP 'installer-compile-check'
+          & $iscc "/O$output" 'packaging/FDGCast.iss'
+          if ($LASTEXITCODE -ne 0) { throw 'Installer script compilation failed' }
+          Remove-Item $output -Recurse -Force
   windows-installer:
+    needs: installer-script-check
     permissions:
       contents: write
     runs-on: windows-2022
@@ -245,10 +265,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          choco install innosetup --version=6.7.3 --yes --no-progress
-          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
-          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $iscc)) { throw 'ISCC.exe missing' }
+          $iscc = & ./packaging/install-inno.ps1
           & $iscc 'packaging/FDGCast.iss'
           if ($LASTEXITCODE -ne 0) { throw 'Installer creation failed' }
           if (-not (Test-Path 'release/FDGCast-1.0.5-rc.1-win-x64-setup.exe')) { throw 'Installer EXE missing' }
@@ -291,8 +308,8 @@ jobs:
           path: release/FDGCast-1.0.5-rc.1-win-x64-setup.exe
           if-no-files-found: error
 
-      - name: Publish approved stable 1.0.5-rc.1 release
-        if: false # Preview installer: no stable release or updater changes.
+      - name: Publish branded installer preview
+        if: github.ref == 'refs/heads/next/branded-installer' && github.event_name == 'push'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -300,21 +317,16 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $version = python -c "from forgecast import __version__; print(__version__)"
-          if ($LASTEXITCODE -ne 0) { throw 'Could not read package version' }
-          if ($version -ne '1.0.5-rc.1') { throw 'Package version does not match the approved stable release' }
+          if ($LASTEXITCODE -ne 0 -or $version -ne '1.0.5-rc.1') { throw 'Preview version mismatch' }
           $tag = 'v1.0.5-rc.1'
           $installer = 'release/FDGCast-1.0.5-rc.1-win-x64-setup.exe'
           $hash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  FDGCast-1.0.5-rc.1-win-x64-setup.exe" | Set-Content 'release/SHA256SUMS.txt' -Encoding utf8NoBOM
-          $manifest = Get-Content 'docs/latest-release.example.json' -Raw | ConvertFrom-Json
-          $manifest | Add-Member -NotePropertyName sha256 -NotePropertyValue $hash -Force
-          $manifest | ConvertTo-Json -Depth 6 | Set-Content 'release/latest.json' -Encoding utf8NoBOM
           gh release view $tag --json tagName 2>$null | Out-Null
-          if ($LASTEXITCODE -eq 0) { throw 'Release already exists; refusing to replace published binaries' }
-          gh release create $tag --target '${{ github.sha }}' --title 'FDGCast 1.0.5-rc.1' --notes-file 'docs/RELEASE_1.0.5-rc.1.md' --draft
-          if ($LASTEXITCODE -ne 0) { throw 'Could not create draft release' }
-          gh release upload $tag $installer 'release/SHA256SUMS.txt' 'release/latest.json'
-          if ($LASTEXITCODE -ne 0) { throw 'Release asset upload failed; release remains draft' }
-          gh release edit $tag --draft=false --latest
-          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }
-
+          if ($LASTEXITCODE -eq 0) { throw 'Preview already exists; refusing to replace binaries' }
+          gh release create $tag --target '${{ github.sha }}' --title 'FDGCast 1.0.5-rc.1 - Branded installer preview' --notes-file 'docs/BRANDED-INSTALLER.md' --prerelease --latest=false --draft
+          if ($LASTEXITCODE -ne 0) { throw 'Could not create preview release' }
+          gh release upload $tag $installer 'release/SHA256SUMS.txt' 'LICENSE' 'COPYING.GPL3' 'LICENSING.md'
+          if ($LASTEXITCODE -ne 0) { throw 'Preview upload failed; release remains draft' }
+          gh release edit $tag --draft=false --prerelease --latest=false
+          if ($LASTEXITCODE -ne 0) { throw 'Preview publication failed' }

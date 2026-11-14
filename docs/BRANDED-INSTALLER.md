@@ -8,10 +8,12 @@ optional. No stream starts automatically.
 
 The application identity, OBS module paths, configuration location, protected
 credentials and uninstall behavior are preserved. This is the plugin + Companion
-installer, not the separate FDGCast Studio project. Stable 1.0.4 and its updater
-manifest are not replaced by a preview build.
+installer, not the separate FDGCast Studio project. The preview is published separately as a prerelease after its checks pass.
+Stable 1.0.4 and its updater manifest are not replaced by this preview.
+Installing the preview updates the existing plugin + Companion installation;
+it does not create a separate OBS installation.
 
-Build with Inno Setup 6.7.3 (pinned in CI). All installed license notices remain
+Build with Inno Setup 6.7.4 (pinned in CI). All installed license notices remain
 included; the additional raw Markdown information page has been removed from the
 wizard, while LICENSING.md remains installed. Native styles automatically defer
 to Windows high-contrast accessibility settings.
