@@ -22,7 +22,7 @@ svg=f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1
 <text x="18" y="31" fill="#fff3df" font-family="DejaVu Sans,Segoe UI,sans-serif" font-weight="bold" font-size="15" letter-spacing="1">FDGCAST</text>
 <text x="19" y="44" fill="#b8b8b5" font-family="DejaVu Sans,Segoe UI,sans-serif" font-size="5.5" letter-spacing="1.2">FORGED DESTINY GAMING</text>
 <image x="15" y="66" width="82" height="82" xlink:href="data:image/png;base64,{logo}"/>
-<text x="19" y="177" fill="#fff3df" font-family="DejaVu Sans,Segoe UI,sans-serif" font-weight="bold" font-size="20">Your stream.</text>
+<text x="19" y="177" fill="#fff3df" font-family="DejaVu Sans,Segoe UI,sans-serif" font-weight="bold" font-size="17">Your stream.</text>
 <text x="19" y="204" fill="#ff5a1f" font-family="DejaVu Sans,Segoe UI,sans-serif" font-weight="bold" font-size="23">Together.</text>
 <path d="M20 223H49" stroke="#ff5a1f" stroke-width="2"/>
 <text x="19" y="245" fill="#d4d5d0" font-family="DejaVu Sans,Segoe UI,sans-serif" font-size="8.5">Multistream. Multichat.</text>
