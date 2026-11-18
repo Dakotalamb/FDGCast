@@ -3,6 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
+import atexit
 from forgecast.pc_health import PCMonitor, StreamOptimizer, gpu_engines
 from forgecast.server import State, observed_stream_state
 
@@ -67,6 +68,7 @@ class OptimizerTests(unittest.TestCase):
         self.process=FakeProcess();self.api=FakePsutil(self.process)
         self.patch=patch('forgecast.pc_health.psutil',self.api);self.patch.start();self.addCleanup(self.patch.stop)
         self.optimizer=StreamOptimizer(self.temp.name)
+        self.addCleanup(atexit.unregister,self.optimizer.restore)
 
     def start(self):
         with patch.object(self.optimizer,'public',return_value={'supported':True}):
@@ -129,7 +131,6 @@ class OptimizerTests(unittest.TestCase):
         self.assertTrue(self.optimizer.public()['pending_restore'])
         self.assertTrue(self.optimizer.path.exists())
 
-if __name__=='__main__':unittest.main()
 
 class PCPrivacyTests(unittest.TestCase):
     def test_demo_cleanup_preserves_real_optimizer_recovery_record(self):
@@ -148,3 +149,45 @@ class PCPrivacyTests(unittest.TestCase):
             self.assertEqual(report['pc_health']['cpu_percent'],83)
             self.assertNotIn('PRIVATE-APP',json.dumps(report))
             self.assertNotIn('processes',report['pc_health'])
+
+
+class PCIntegrationTests(unittest.TestCase):
+    def test_real_system_sampling_and_optional_gpu_counters(self):
+        import time
+        monitor=PCMonitor()
+        try:
+            first=monitor.sample()
+            time.sleep(.05)
+            second=monitor.sample()
+            self.assertTrue(second['available'],second)
+            self.assertIsNotNone(second['cpu_percent'])
+            self.assertGreater(second['memory_total_gb'],0)
+            self.assertGreaterEqual(second['memory_percent'],0)
+            self.assertLessEqual(second['memory_percent'],100)
+            if second['gpu'] is not None:
+                self.assertGreaterEqual(second['gpu']['busy_percent'],0)
+                self.assertLessEqual(second['gpu']['busy_percent'],100)
+        finally:monitor.close()
+
+    def test_atexit_hook_restores_desktop_daemon_process_case(self):
+        with TemporaryDirectory() as root, patch('forgecast.pc_health.atexit.register') as register:
+            optimizer=StreamOptimizer(root)
+            register.assert_called_once_with(optimizer.restore)
+            process=FakeProcess();api=FakePsutil(process)
+            with patch('forgecast.pc_health.psutil',api), patch.object(optimizer,'public',return_value={'supported':True}):
+                optimizer.start(True)
+                register.call_args.args[0]()
+                self.assertEqual(process.priority,32)
+                self.assertFalse(optimizer.enabled)
+
+    def test_journal_write_failure_changes_nothing(self):
+        with TemporaryDirectory() as root, patch('forgecast.pc_health.atexit.register'):
+            optimizer=StreamOptimizer(root)
+            process=FakeProcess();api=FakePsutil(process)
+            with patch('forgecast.pc_health.psutil',api), patch.object(optimizer,'public',return_value={'supported':True}), patch('forgecast.pc_health.atomic_json',side_effect=OSError()):
+                with self.assertRaisesRegex(ValueError,'No PC settings'):
+                    optimizer.start(True)
+            self.assertEqual(process.writes,[])
+            self.assertFalse(optimizer.records)
+
+if __name__=='__main__':unittest.main()

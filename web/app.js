@@ -271,7 +271,7 @@ function render(s) {
  $('render').textContent=fresh&&stats.averageFrameRenderTime!==undefined?stats.averageFrameRenderTime.toFixed(1)+' ms':'—';
  $('outputCount').textContent=s.native_connected?s.outputs.filter(x=>x.active).length:'—';
  $('persistence').textContent=s.secret_persistence==='Session memory only'?'Connections are stored for this session only. Account tokens stay private.':'Saved connection details stay on this computer. Account tokens stay private.';
- $('health').replaceChildren(...((s.issues.length||s.stream_history?.issues?.length)?[...(s.stream_history?.issues||[]),...(s.pc_issues?.length?s.pc_issues:s.issues)].map(issue):[el('p',s.obs_connected?'No new frame-loss counters in the latest sample. This does not verify your whole stream.':'Connect OBS for live measurements.',s.obs_connected?'ok':'muted')]));
+ $('health').replaceChildren(...((s.issues.length||s.pc_issues?.length||s.stream_history?.issues?.length)?[...(s.stream_history?.issues||[]),...(s.pc_issues?.length?s.pc_issues:s.issues)].map(issue):[el('p',s.obs_connected?'No new frame-loss counters in the latest sample. This does not verify your whole stream.':'Connect OBS for live measurements.',s.obs_connected?'ok':'muted')]));
  $('statuses').replaceChildren(...Object.entries(s.statuses).map(([k,v])=>connectionCard(k,v)));
  renderPC(s);
  renderMainStream(s);

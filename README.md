@@ -1,4 +1,4 @@
-## Preview 1.0.5-rc.3 — clearer Stream Doctor and PC monitoring
+## Preview 1.0.5-rc.4 — clearer Stream Doctor and PC monitoring
 
 Stream Doctor now shows whole-PC CPU, GPU and memory alongside OBS frame health,
 plus busiest apps and disk/network activity. Its optional session-only Stream

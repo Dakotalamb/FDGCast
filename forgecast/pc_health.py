@@ -3,6 +3,7 @@
 SPDX-License-Identifier: GPL-2.0-or-later
 """
 import ctypes
+import atexit
 from ctypes import wintypes
 import json
 import math
@@ -110,6 +111,7 @@ class PCMonitor:
         self.processes = {}
         self.since = {}
         self.gpu = None
+        self.last_diagnosis = None
         self.last_scan = 0
         self.process_rows = []
         self.cpu_before = None
@@ -176,6 +178,9 @@ class PCMonitor:
 
     def diagnose(self, obs_issues, now=None):
         now = time.monotonic() if now is None else now
+        if self.last_diagnosis is not None and now-self.last_diagnosis > 10:
+            self.since.clear()
+        self.last_diagnosis = now
         pc = self.current
         if not pc.get('available'):
             self.since.clear()
@@ -215,6 +220,8 @@ class StreamOptimizer:
         self.enabled = False
         self.message = 'Off. No PC settings changed.'
         self.last_live = time.monotonic()
+        if not demo:
+            atexit.register(self.restore)
         if not demo and self.path.exists():
             try:
                 records = json.loads(self.path.read_text(encoding='utf-8'))
@@ -251,7 +258,11 @@ class StreamOptimizer:
         if len(records)>1:
             raise ValueError('More than one OBS instance is running. Close unused instances before using Stream Optimizer.')
         self.records = records
-        atomic_json(self.path, records)
+        try:
+            atomic_json(self.path, records)
+        except OSError:
+            self.records = []
+            raise ValueError('The restoration record could not be saved. No PC settings were changed.')
         changed = False
         try:
             for record in records:
@@ -283,10 +294,15 @@ class StreamOptimizer:
             except (psutil.Error, OSError, KeyError, TypeError, ValueError): pending.append(record)
         self.records = pending
         if pending:
-            atomic_json(self.path, pending)
+            try: atomic_json(self.path, pending)
+            except OSError: pass
             self.message = 'Restoration needs attention. Close OBS to reset its process priority, or try Restore now again.'
         else:
-            self.path.unlink(missing_ok=True)
+            try:
+                self.path.unlink(missing_ok=True)
+            except OSError:
+                self.message = 'Priority restored. The recovery record could not be removed; restart Companion to retry cleanup.'
+                return
             self.message = 'Off. Temporary priority changes restored; later manual priority changes were kept.'
 
     @synchronized

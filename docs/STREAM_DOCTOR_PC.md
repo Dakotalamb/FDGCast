@@ -1,4 +1,4 @@
-# FDGCast 1.0.5-rc.3 — Stream Doctor PC monitoring preview
+# FDGCast 1.0.5-rc.4 — Stream Doctor PC monitoring preview
 
 The GitHub repository has been renamed from Dakotalamb/ForgeCast to
 [Dakotalamb/FDGCast](https://github.com/Dakotalamb/FDGCast). App help, installer,
@@ -69,7 +69,7 @@ on a live game/stream require real-machine testing. No performance gain is claim
 
 - Use https://github.com/Dakotalamb/FDGCast for repository and release links.
 - Keep the public stable download/feed on 1.0.4 until stable promotion.
-- If listing this preview, label it **1.0.5-rc.3 — PC monitoring preview**.
+- If listing this preview, label it **1.0.5-rc.4 — PC monitoring preview**.
 - Describe CPU/GPU/memory monitoring and optional temporary OBS priority assist.
   Do not advertise guaranteed FPS gains, automatic root-cause detection, thermal
   monitoring, VRAM monitoring or a universal game optimizer.
