@@ -2,7 +2,7 @@
 
 Compiled source: `13304e460a7a8611204571eaedb2f8394acf5a5f`.
 
-Windows build and checks: https://github.com/Dakotalamb/ForgeCast/actions/runs/37159725168
+Windows build and checks: https://github.com/Dakotalamb/FDGCast/actions/runs/37159725168
 
 - Native OBS module compiled against OBS Studio 32.2.2.
 - 145 Python regression tests passed on Windows and locally.

@@ -35,6 +35,7 @@ from .entitlements import accept_entitlements, overlay_access
 from .overlay_studio import ACTIONS as STUDIO_ACTIONS, studio_action, studio_asset, studio_feed, designs
 from .platforms import PLATFORMS, CATALOG, require_picture_support
 from .activity_status import activity_connection
+from .pc_health import PCMonitor, StreamOptimizer
 from . import __version__
 
 PORT = 17654
@@ -74,6 +75,9 @@ class State:
         self.stats = {}
         self.stats_seen = 0
         self.current_issues = []
+        self.pc_monitor = PCMonitor()
+        self.pc_issues = []
+        self.optimizer = StreamOptimizer(self.directory, demo)
         self.scene = 'OBS disconnected'
         self.hub_connection = 'not_paired'
         self.session = self.obs = None
@@ -84,6 +88,7 @@ class State:
         self.vertical = VerticalStudio(self)
         self.kick_after = 0
         self.lock = asyncio.Lock()
+        self.optimizer_lock = asyncio.Lock()
         self.status_details = {}
         self.hub_sync_lock = asyncio.Lock()
         self.media = OrderedDict()
@@ -219,9 +224,9 @@ class State:
         # Deliberately excludes chats, stream URLs, credentials and source/window names.
         return dict(schema_version=1, app='FDGCast', version=__version__, demo=self.demo,
                     generated_at=time.time(), stream_history=self.history.report(), audio_guard=self.audio.summary(), incidents=list(self.doctor.incidents),
-                    samples=list(self.doctor.samples), limitations=[
+                    samples=list(self.doctor.samples), pc_health={k:v for k,v in self.pc_monitor.current.items() if k!='processes'}, limitations=[
                         'Counter-based classification, not a proven root cause.',
-                        'No unique-audience estimate; no GPU process attribution.',
+                        'No unique-audience estimate; no GPU process attribution, temperatures, VRAM or internet-capacity measurement.',
                         'Output names are user-provided; review before sharing.'])
 
     def public(self):
@@ -229,7 +234,7 @@ class State:
                     native_connected=time.time()-self.native_seen < 5,
                     vertical_canvas={**self.native_canvas, 'available':'vertical_canvas_v1' in self.native_features} if time.time()-self.native_seen < 5 else {},
                     main_output=self.main_output if time.time()-self.native_seen < 5 else None,
-                    stats=self.stats, issues=self.current_issues, scene=self.scene,
+                    stats=self.stats, issues=self.current_issues, pc_health=self.pc_monitor.current, pc_issues=self.pc_issues, optimizer=self.optimizer.public(), scene=self.scene,
                     audio_sound_custom=self.audio_sound_path.exists(), audio_guard=self.audio.current, audio_settings=self.audio.settings, audio_history=list(self.audio.history),
                     stream_history=self.history.public(), doctor_notifications=self.config.get("doctor_notifications", True), doctor_sound=self.config.get("doctor_sound",False), doctor_sensitivity=self.doctor.sensitivity,
                     output_errors=self.output_errors,
@@ -681,6 +686,13 @@ async def action(request):
                 submitted = False
             s.audio.record('test_'+channel+'_submitted' if submitted else 'test_'+channel+'_unavailable')
             return web.json_response({'submitted':submitted, 'channel':channel})
+        elif op == 'stream_optimizer':
+            if not isinstance(data.get('enabled'), bool): raise ValueError('Choose whether to enable Stream Optimizer.')
+            async with s.optimizer_lock:
+                if data['enabled']:
+                    await asyncio.to_thread(s.optimizer.start, observed_stream_state(s))
+                else:
+                    await asyncio.to_thread(s.optimizer.restore)
         elif op == 'doctor_settings':
             if 'sound' in data:
                 if not isinstance(data['sound'],bool):raise ValueError('Sound must be true or false.')
@@ -911,7 +923,9 @@ async def native(request):
         'messages': [m for m in s.chat_view() if m.get('kind', 'chat') in {'chat','superchat','supersticker','membership'} or (s.config.get('merge_events') and m.get('kind') in set(s.config.get('event_kinds', DEFAULT_EVENTS)))][-200:],
         'events': combined_events(s),
         'activity_connection': activity_connection(s.statuses, s.paused_platforms, s.config),
-        'issues': (s.history.issues+s.current_issues)[:12],
+        'issues': (s.history.issues+(s.pc_issues or s.current_issues))[:12],
+        'pc_health': {k:v for k,v in s.pc_monitor.current.items() if k!='processes'},
+        'optimizer': s.optimizer.public(),
         'destination_health': s.history.health,
         'audio_guard': s.audio.current,
         'audio_settings': s.audio.settings,
@@ -996,6 +1010,32 @@ async def native_action(request):
         else:
             raise ValueError('Unsupported OBS dock action.')
     return web.json_response({'ok':True})
+
+
+def observed_stream_state(s):
+    """An active additional output also keeps session optimization enabled."""
+    native = time.time()-s.native_seen < 5
+    websocket = time.time()-s.stats_seen < 8
+    if native and (any(o.get('active') for o in s.native_outputs) or (s.audio_snapshot or {}).get('stream_active')):
+        return True
+    if websocket and s.stats.get('stream_active'):
+        return True
+    if native or websocket:
+        return False
+    return None
+
+
+async def poll_pc(s):
+    while True:
+        try:
+            await asyncio.to_thread(s.pc_monitor.sample)
+            s.pc_issues = s.pc_monitor.diagnose(s.current_issues)
+            async with s.optimizer_lock:
+                await asyncio.to_thread(s.optimizer.tick, observed_stream_state(s))
+        except Exception:
+            s.pc_monitor.current = {'available':False, 'message':'PC measurements are temporarily unavailable. Monitoring will retry.'}
+            s.pc_issues = []
+        await asyncio.sleep(3)
 
 
 async def poll(s):
@@ -1324,6 +1364,7 @@ async def lifecycle(app):
         history_task = asyncio.create_task(poll_history(s)) if not s.demo else None
         doctor_notify_task = asyncio.create_task(doctor_notifications(s)) if not s.demo else None
         update_task = asyncio.create_task(s.updates.run()) if not s.demo else None
+        pc_task = asyncio.create_task(poll_pc(s)) if not s.demo else None
         yield
         if s.history.session:
             counts=s.session_counts.get(s.history.session['id'], {'chat_messages':{},'audience_events':{}})
@@ -1338,10 +1379,12 @@ async def lifecycle(app):
         if hub_task:
             hub_task.cancel()
             await asyncio.gather(hub_task, return_exceptions=True)
-        for background in (meta_task, audio_task, notify_task, history_task, doctor_notify_task, update_task):
+        for background in (meta_task, audio_task, notify_task, history_task, doctor_notify_task, update_task, pc_task):
             if background:
                 background.cancel()
                 await asyncio.gather(background, return_exceptions=True)
+        await asyncio.to_thread(s.optimizer.restore)
+        await asyncio.to_thread(s.pc_monitor.close)
         await s.audio_test.close()
         await s.obs.close()
         if not s.demo:

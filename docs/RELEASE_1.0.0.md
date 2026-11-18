@@ -59,7 +59,7 @@ OBS 32.2.2 compilation, four browser suites, packaged startup and installer chec
 Stable 1.0.0 receives the same workflow before publication. Its release assets
 include the installer, SHA256SUMS.txt and latest.json with the actual binary hash.
 
-Official release: https://github.com/Dakotalamb/ForgeCast/releases/tag/v1.0.0
+Official release: https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.0
 
 The Hub updater reads `/fdgcast/releases/latest.json` from the configured Hub.
 Publishing the GitHub release does not deploy that Hub endpoint. Copy the exact
@@ -71,7 +71,7 @@ installs may continue showing the older hosted preview. See UPDATES.md.
 
 - Published as the latest stable GitHub release: `v1.0.0`.
 - Tested source: `8ac56a28d9275fcc6249c935714602278b627763`.
-- Successful build: https://github.com/Dakotalamb/ForgeCast/actions/runs/39089171012
+- Successful build: https://github.com/Dakotalamb/FDGCast/actions/runs/39089171012
 - Installer: `FDGCast-1.0.0-win-x64-setup.exe`, 22,705,873 bytes.
 - SHA-256: `adc81b0af075557eb25335b937326f1fd00bc5b5b7008cdb6f2ffbc116bb1aa1`.
 - 240 Python tests, native framing/routing tests, OBS 32.2.2 compilation, browser,

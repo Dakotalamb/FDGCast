@@ -38,7 +38,7 @@ Tested installer: FDGCast-0.8.0-preview-win-x64-setup.exe
 Bytes: 17,242,239
 SHA-256: 72947022d800fbff8fe7e4c13426507b2d8e3a83c0a92f5b07a334c6aef4e392
 Target: Windows x64 / OBS Studio 32.2.2.
-Build: https://github.com/Dakotalamb/ForgeCast/actions/runs/37876362565
+Build: https://github.com/Dakotalamb/FDGCast/actions/runs/37876362565
 
 When choosing to distribute this preview, host that exact EXE at
 /downloads/FDGCast-0.8.0-preview-win-x64-setup.exe and update the public

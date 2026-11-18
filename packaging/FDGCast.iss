@@ -3,9 +3,9 @@
 [Setup]
 AppId={{C47C9B69-A4E0-4F8B-8D90-6D4CCF944210}
 AppName=FDGCast
-AppVersion=1.0.5-rc.2
+AppVersion=1.0.5-rc.3
 VersionInfoVersion=1.0.5.0
-AppVerName=FDGCast 1.0.5-rc.2
+AppVerName=FDGCast 1.0.5-rc.3
 AppPublisher=Forged Destiny Gaming
 AppPublisherURL=https://forgeddestinygaming.com/
 SetupIconFile={#SourcePath}FDGCast.ico
@@ -13,7 +13,7 @@ UninstallDisplayIcon={app}\FDGCast.exe
 DefaultDirName={autopf}\Forged Destiny Gaming\FDGCast
 DefaultGroupName=FDGCast
 OutputDir={#SourcePath}..\release
-OutputBaseFilename=FDGCast-1.0.5-rc.2-win-x64-setup
+OutputBaseFilename=FDGCast-1.0.5-rc.3-win-x64-setup
 Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=admin
@@ -35,7 +35,7 @@ DisableDirPage=no
 DisableProgramGroupPage=yes
 UsePreviousTasks=yes
 AppSupportURL=https://hub.forgeddestinygaming.com/fdgcast
-AppUpdatesURL=https://github.com/Dakotalamb/ForgeCast/releases/latest
+AppUpdatesURL=https://github.com/Dakotalamb/FDGCast/releases/latest
 LicenseFile={#SourcePath}..\LICENSE
 ; Detailed licensing remains installed alongside the full GPL texts.
 
@@ -71,10 +71,10 @@ Filename: "https://hub.forgeddestinygaming.com/fdgcast"; Description: "Open the 
 
 [Messages]
 WelcomeLabel1=Your stream starts here.
-WelcomeLabel2=Version 1.0.5-rc.2 - Installer preview%n%nFDGCast brings your streaming controls, chats and vertical layouts together.%n%nThis installer includes:%n  FDGCast desktop Companion%n  FDGCast plugin for OBS Studio%n%nClose OBS and Companion before continuing.%nYour saved settings stay on this computer.
+WelcomeLabel2=Version 1.0.5-rc.3 - Installer preview%n%nFDGCast brings your streaming controls, chats and vertical layouts together.%n%nThis installer includes:%n  FDGCast desktop Companion%n  FDGCast plugin for OBS Studio%n%nClose OBS and Companion before continuing.%nYour saved settings stay on this computer.
 FinishedHeadingLabel=FDGCast is ready.
 FinishedLabel=Next steps:%n%n1. Reopen OBS Studio.%n2. Open FDGCast Companion and go to Connections.%n3. Connect OBS and sync your platform accounts.%n%nCompanion must stay open for chat and activity.%nNothing starts streaming automatically.
-BeveledLabel=FORGED DESTINY GAMING  /  1.0.5-rc.2
+BeveledLabel=FORGED DESTINY GAMING  /  1.0.5-rc.3
 SelectTasksLabel2=Choose any optional shortcuts. FDGCast is always available from the Start menu.
 
 [UninstallDelete]
@@ -137,7 +137,7 @@ begin
   begin
     WizardForm.WelcomeLabel1.Caption := 'Updating FDGCast.';
     WizardForm.WelcomeLabel2.Caption :=
-      'Update FDGCast to 1.0.5-rc.2.' + #13#10#13#10 +
+      'Update FDGCast to 1.0.5-rc.3.' + #13#10#13#10 +
       'Your saved connections, layouts and Windows-protected credentials stay on this computer.' + #13#10#13#10 +
       'Close OBS Studio and FDGCast Companion before continuing.' + #13#10#13#10 +
       'Setup updates Companion and the FDGCast OBS plugin together.';

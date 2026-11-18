@@ -15,7 +15,7 @@ async function main(){
    server.stdout.on('data',chunk=>{out+=chunk;const match=out.match(/http:\/\/127\.0\.0\.1:17654\/#\S+/);if(match){clearTimeout(timer);resolve(match[0]);}});
    server.on('exit',code=>{clearTimeout(timer);reject(Error('Server exited '+code));});
   });
-  browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+  browser=await chromium.launch({headless:true,executablePath:process.env.FDGCAST_CHROMIUM||undefined,args:['--no-sandbox']});
   const page=await browser.newPage({viewport:{width:1440,height:1080}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(url);await page.waitForFunction(()=>document.querySelector('#audioHome').textContent.includes('microphone')||document.querySelector('#mode').textContent.includes('DEMO'));
@@ -29,6 +29,12 @@ async function main(){
   assert.equal(await page.locator('#connectInstagram').isVisible(),true);
   assert.equal(await page.locator('#studioPlatforms option[value=facebook]').count(),1);
   assert.equal(await page.locator('#studioPlatforms option[value=instagram]').count(),1);
+  await page.locator('[data-tab=doctor]').click();
+  assert.equal(await page.locator('#pcMetrics .pc-metric').count(),3,'CPU, GPU and memory remain visible even without telemetry');
+  assert.match(await page.locator('#pcMetrics').textContent(),/CPU.*GPU.*Memory/);
+  assert.equal(await page.locator('#optimizerStart').isDisabled(),true,'Optimizer never applies changes in demo mode');
+  fs.mkdirSync(path.resolve(__dirname,'../qa'),{recursive:true});
+  await page.screenshot({path:path.resolve(__dirname,'../qa/stream-doctor-pc.png'),fullPage:true});
   await page.locator('[data-tab=live]').click();
   const output=path.resolve(__dirname,'../qa');fs.mkdirSync(output,{recursive:true});
   assert.ok(await page.locator('#activityPanel').evaluate(e=>e.getBoundingClientRect().width)>600);

@@ -22,7 +22,7 @@ def release_link(value, hub_url):
     parsed, hub = urlparse(url), urlparse(hub_url)
     if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.port not in (None,443):
         raise ValueError('Release links must use HTTPS.')
-    if parsed.hostname != hub.hostname and not (parsed.hostname == 'github.com' and parsed.path.startswith('/Dakotalamb/ForgeCast/releases/')):
+    if parsed.hostname != hub.hostname and not (parsed.hostname == 'github.com' and parsed.path.startswith(('/Dakotalamb/FDGCast/releases/', '/Dakotalamb/ForgeCast/releases/'))):
         raise ValueError('Release link is outside the Hub or official releases.')
     return url
 

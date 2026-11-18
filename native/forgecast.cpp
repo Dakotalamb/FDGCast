@@ -789,7 +789,21 @@ public:
             html += "<p><b>"+health.value("name").toString().toHtmlEscaped()+"</b> · "+health.value("state").toString().toHtmlEscaped()+"</p>";
         }
         if (statsConnected) html += "<p>OBS FPS: " + QString::number(stats.value("activeFps").toDouble(), 'f', 1) +
-                " · CPU: " + QString::number(stats.value("cpuUsage").toDouble(), 'f', 1) + "%</p>";
+                " · OBS CPU: " + QString::number(stats.value("cpuUsage").toDouble(), 'f', 1) + "%</p>";
+        const auto pc = payload.value("pc_health").toObject();
+        const bool pcFresh = pc.value("available").toBool() &&
+            QDateTime::currentMSecsSinceEpoch()/1000.0-pc.value("sampled_at").toDouble() < 10;
+        auto percent = [](const QJsonValue &value) {
+            return value.isDouble() ? QString::number(value.toDouble(),'f',1)+"%" : QString("Unavailable");
+        };
+        if (pcFresh) {
+            html += "<p><b>Whole PC</b><br>CPU: "+percent(pc.value("cpu_percent"))+
+                " · GPU: "+percent(pc.value("gpu").toObject().value("busy_percent"))+
+                " · Memory: "+percent(pc.value("memory_percent"))+"</p>";
+        } else html += "<p>Whole-PC readings unavailable</p>";
+        const auto optimizer = payload.value("optimizer").toObject();
+        if (optimizer.value("enabled").toBool() || optimizer.value("pending_restore").toBool())
+            html += "<p>Optimizer: "+optimizer.value("message").toString().toHtmlEscaped()+"</p>";
         const auto issues = payload.value("issues").toArray();
         if (issues.isEmpty() && statsConnected) html += "<p style='color:#80d6a0'>Frames ✓</p>";
         for (const auto &entry : issues) {
@@ -797,7 +811,7 @@ public:
             html += "<p><b style='color:#ff7549'>" + row.value("title").toString().toHtmlEscaped() +
                     "</b>"+(view->compact?QString():"<br>"+row.value("evidence").toString().toHtmlEscaped()+"<br>Try: "+row.value("suggestion").toString().toHtmlEscaped())+"</p>";
         }
-        if (!view->compact) html += "<p style='color:#a9adb0'>Counter-based diagnosis; the faulty process or network hop "
+        if (!view->compact) html += "<p style='color:#a9adb0'>Measured symptoms help narrow down trouble; the exact cause or network hop "
                 "cannot be proven from OBS statistics alone.</p>";
         report->setHtml(html+"</div>");
         QStringList tips;for(const auto &entry : issues) {const auto row=entry.toObject();tips.append(row.value("title").toString()+"\n"+row.value("evidence").toString()+"\n"+row.value("suggestion").toString());}

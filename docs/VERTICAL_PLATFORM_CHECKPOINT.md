@@ -5,7 +5,7 @@ FDGCast 1.0.2-rc.2 is ready for operator testing. Stable release and automatic u
 ## Build receipt
 
 - Tested source: abcf14a78f5790afcb27e00ceaea6ecfd50f2854
-- Successful Windows run: https://github.com/Dakotalamb/ForgeCast/actions/runs/39446310646
+- Successful Windows run: https://github.com/Dakotalamb/FDGCast/actions/runs/39446310646
 - Installer: FDGCast-1.0.2-rc.2-win-x64-setup.exe
 - Size: 22765941 bytes
 - SHA-256: 72928de3562e24bd507eda4e6a85103b372ac2c67dca54902dac751e2f494dbe

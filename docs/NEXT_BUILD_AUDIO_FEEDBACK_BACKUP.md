@@ -27,6 +27,6 @@ server/key setup. Restart Companion and sync accounts after restoring event choi
 Validation: 180 Python tests passed, including 14 new ownership, restart, privacy,
 permission, confirmation and restore-failure checks. JavaScript syntax passed.
 Windows behavior and Chromium verification passed in run
-https://github.com/Dakotalamb/ForgeCast/actions/runs/37863356654
+https://github.com/Dakotalamb/FDGCast/actions/runs/37863356654
 including the existing interface and simulated recording controls, feedback
 preview/XSS/confirmation/edit reset, backup review/restore and mobile overflow. These additions were absent from 0.7.0; they are included in the 0.8.0 Preview installer, whose expanded suite passes 194 Python tests and Windows/browser/package checks.

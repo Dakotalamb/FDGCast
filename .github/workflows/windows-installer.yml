@@ -2,7 +2,7 @@ name: Build FDGCast Windows installer
 
 on:
   push:
-    branches: [main, release/0.9.0, next/output-recovery, next/tiktok-live-events, next/license-activity-status, next/branded-installer]
+    branches: [main, release/0.9.0, next/output-recovery, next/tiktok-live-events, next/license-activity-status, next/branded-installer, next/stream-doctor-pc]
   workflow_dispatch:
 
 permissions:
@@ -146,7 +146,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FDGCast-1.0.5-rc.2-encoded-output-evidence
+          name: FDGCast-1.0.5-rc.3-encoded-output-evidence
           path: qa-encoded/
           if-no-files-found: ignore
       - name: Verify Additional Canvas in the real OBS frontend
@@ -182,7 +182,7 @@ jobs:
       - name: Upload UI quality screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: FDGCast-1.0.5-rc.2-UI-quality-check
+          name: FDGCast-1.0.5-rc.3-UI-quality-check
           path: |
             qa/*.png
             qa-next/*.png
@@ -268,26 +268,26 @@ jobs:
           $iscc = & ./packaging/install-inno.ps1
           & $iscc 'packaging/FDGCast.iss'
           if ($LASTEXITCODE -ne 0) { throw 'Installer creation failed' }
-          if (-not (Test-Path 'release/FDGCast-1.0.5-rc.2-win-x64-setup.exe')) { throw 'Installer EXE missing' }
+          if (-not (Test-Path 'release/FDGCast-1.0.5-rc.3-win-x64-setup.exe')) { throw 'Installer EXE missing' }
       - name: Verify real branded installer screens
         shell: pwsh
         run: |
           python -m pip install 'pywinauto==0.6.9' 'pillow==11.3.0'
           if ($LASTEXITCODE -ne 0) { throw 'Installer UI test dependencies failed' }
-          python tests/installer/run.py --installer release/FDGCast-1.0.5-rc.2-win-x64-setup.exe --out qa-installer
+          python tests/installer/run.py --installer release/FDGCast-1.0.5-rc.3-win-x64-setup.exe --out qa-installer
           if ($LASTEXITCODE -ne 0) { throw 'Installer wizard validation failed' }
       - name: Upload installer appearance evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FDGCast-1.0.5-rc.2-installer-appearance
+          name: FDGCast-1.0.5-rc.3-installer-appearance
           path: qa-installer/
           if-no-files-found: ignore
       - name: Smoke test installed OBS module location
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $installer = (Resolve-Path 'release/FDGCast-1.0.5-rc.2-win-x64-setup.exe').Path
+          $installer = (Resolve-Path 'release/FDGCast-1.0.5-rc.3-win-x64-setup.exe').Path
           $installed = Join-Path $env:ProgramData 'obs-studio/plugins/forgecast/bin/64bit/forgecast.dll'
           $process = Start-Process $installer -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
@@ -304,12 +304,12 @@ jobs:
       - name: Upload Windows installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FDGCast-1.0.5-rc.2-OBS-32.2.2-Windows-installer
-          path: release/FDGCast-1.0.5-rc.2-win-x64-setup.exe
+          name: FDGCast-1.0.5-rc.3-OBS-32.2.2-Windows-installer
+          path: release/FDGCast-1.0.5-rc.3-win-x64-setup.exe
           if-no-files-found: error
 
-      - name: Publish branded installer preview
-        if: github.ref == 'refs/heads/next/branded-installer' && github.event_name == 'push'
+      - name: Publish PC monitoring preview
+        if: github.ref == 'refs/heads/next/stream-doctor-pc' && github.event_name == 'push'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -317,14 +317,14 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $version = python -c "from forgecast import __version__; print(__version__)"
-          if ($LASTEXITCODE -ne 0 -or $version -ne '1.0.5-rc.2') { throw 'Preview version mismatch' }
-          $tag = 'v1.0.5-rc.2'
-          $installer = 'release/FDGCast-1.0.5-rc.2-win-x64-setup.exe'
+          if ($LASTEXITCODE -ne 0 -or $version -ne '1.0.5-rc.3') { throw 'Preview version mismatch' }
+          $tag = 'v1.0.5-rc.3'
+          $installer = 'release/FDGCast-1.0.5-rc.3-win-x64-setup.exe'
           $hash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  FDGCast-1.0.5-rc.2-win-x64-setup.exe" | Set-Content 'release/SHA256SUMS.txt' -Encoding utf8NoBOM
+          "$hash  FDGCast-1.0.5-rc.3-win-x64-setup.exe" | Set-Content 'release/SHA256SUMS.txt' -Encoding utf8NoBOM
           gh release view $tag --json tagName 2>$null | Out-Null
           if ($LASTEXITCODE -eq 0) { throw 'Preview already exists; refusing to replace binaries' }
-          gh release create $tag --target '${{ github.sha }}' --title 'FDGCast 1.0.5-rc.2 - Branded installer preview' --notes-file 'docs/BRANDED-INSTALLER.md' --prerelease --latest=false --draft
+          gh release create $tag --target '${{ github.sha }}' --title 'FDGCast 1.0.5-rc.3 - PC monitoring preview' --notes-file 'docs/STREAM_DOCTOR_PC.md' --prerelease --latest=false --draft
           if ($LASTEXITCODE -ne 0) { throw 'Could not create preview release' }
           gh release upload $tag $installer 'release/SHA256SUMS.txt' 'LICENSE' 'COPYING.GPL3' 'LICENSING.md'
           if ($LASTEXITCODE -ne 0) { throw 'Preview upload failed; release remains draft' }

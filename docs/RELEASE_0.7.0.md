@@ -54,7 +54,7 @@ is distinct from real-account delivery and testing docks in a running OBS UI.
 ## Validation
 
 166 Python tests passed locally after the final local checkpoint/overlay queue fixes.
-Windows build run [37712506897](https://github.com/Dakotalamb/ForgeCast/actions/runs/37712506897)
+Windows build run [37712506897](https://github.com/Dakotalamb/FDGCast/actions/runs/37712506897)
 passed native compilation, 166 Python tests, Chromium checks across all six tabs
 and the overlay, packaged desktop launch/icon/single-instance checks, service
 smoke checks, installer creation and installation-path/hash checks.

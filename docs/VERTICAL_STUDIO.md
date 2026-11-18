@@ -85,7 +85,7 @@ The editor check covers source composition, camera zoom/mirroring, saving, scene
 following, unsaved-edit protection, pausing and inactive-tab preview behavior.
 No real creator broadcast or GPU resource measurement was performed.
 
-Build: https://github.com/Dakotalamb/ForgeCast/actions/runs/39085323798
+Build: https://github.com/Dakotalamb/FDGCast/actions/runs/39085323798
 Source: b9456f69453ceef9c9ea3f0a9212037608714f5d.
 Installer: `FDGCast-1.0.0-rc.3-win-x64-setup.exe`.
 Size: 22697350 bytes.
@@ -107,7 +107,7 @@ drawing/default follow/hidden advanced controls, packaged startup and installer
 checks. The desktop screenshot was reviewed. Actual creator broadcast playback
 and GPU savings were not measured.
 
-Build: https://github.com/Dakotalamb/ForgeCast/actions/runs/39086614304
+Build: https://github.com/Dakotalamb/FDGCast/actions/runs/39086614304
 Source: 1825042e20d2d89777fca95eb8caf6e9705938d5.
 Installer: `FDGCast-1.0.0-rc.4-win-x64-setup.exe`. Size: 22699593 bytes.
 SHA-256: `07c137c6787ece5ffd7de5e993638fa1a462c7b2df3d73a28a388988c5c94b01`.
@@ -125,7 +125,7 @@ Real OBS broadcast and reconnect acceptance remain required before stable 1.0.0.
 
 RC5 Windows validation passed:
 - Source: `7145b007fb401a60025c0d6dfbb375d04126585d`.
-- Build: https://github.com/Dakotalamb/ForgeCast/actions/runs/39088300418
+- Build: https://github.com/Dakotalamb/FDGCast/actions/runs/39088300418
 - Installer: `FDGCast-1.0.0-rc.5-win-x64-setup.exe` (22,706,615 bytes).
 - SHA-256: `ef686e6175c14bba9bb116c4861683c72e2312a1fb3f4f2bdb1b4dcbee7eea99`.
 - Native geometry/routing tests, OBS 32.2.2 compilation, Python regression,

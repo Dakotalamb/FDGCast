@@ -95,3 +95,5 @@ input,select,textarea{background:#191c1f;border-color:#62666a}.primary,#startAll
 .destination-card>.controls button{max-width:100%;white-space:normal}
 .activity-connection{background:#423026;color:#ffe0ac;border:1px solid #a97537;border-radius:6px;padding:12px;margin:12px 0;overflow-wrap:anywhere;font-size:13px}
 .activity-connection[data-level=ready]{background:#203c36;color:#b8f0cc;border-color:#57866a}
+
+.pc-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}.pc-metric{background:var(--panel,#17202e);border:1px solid #596170;border-radius:10px;padding:16px}.pc-metric p{font-size:1.8rem;font-weight:700;margin:8px 0}.pc-metric strong{font-size:.9rem}

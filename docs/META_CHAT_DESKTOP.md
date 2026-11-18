@@ -64,7 +64,7 @@ private-URL masking and free/paid overlay behavior before stable release.
 227 Python tests passed. Native OBS 32.2.2 compilation, Chromium UI checks,
 packaged dependency/service checks, desktop startup checks and installer smoke
 checks passed in:
-https://github.com/Dakotalamb/ForgeCast/actions/runs/39058290174
+https://github.com/Dakotalamb/FDGCast/actions/runs/39058290174
 
 Tested source commit: a01bf4547b8bc629befd0f4571dfb2485359b1b8.
 
