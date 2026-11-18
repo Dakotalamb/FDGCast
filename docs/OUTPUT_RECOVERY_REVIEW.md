@@ -54,7 +54,7 @@ There is no automated install, service change or restart.
 ## Validated review build
 
 - Tested source: `5ef62197bd921598e7cde60c71279e66b6510776`.
-- Successful Windows run: https://github.com/Dakotalamb/ForgeCast/actions/runs/39351413564
+- Successful Windows run: https://github.com/Dakotalamb/FDGCast/actions/runs/39351413564
 - 246 Python tests, native geometry/recursion checks, all four browser suites,
   packaged service/desktop and installed module checks passed.
 - Real OBS 32.2.2 sent and decoded 12 localhost H.264/AAC captures: simultaneous
@@ -62,6 +62,6 @@ There is no automated install, service change or restart.
   tone and changed scenes/layouts across stop/restart.
 - Installer: `FDGCast-1.0.2-rc.1-win-x64-setup.exe` (22,749,306 bytes).
 - SHA-256: `a159d8643d238b00c1f994310a9b03ca8374be0f520693299e854ca19ab63fa9`.
-- Draft review: https://github.com/Dakotalamb/ForgeCast/pull/2
+- Draft review: https://github.com/Dakotalamb/FDGCast/pull/2
 - Stable GitHub release remains v1.0.1; this work did not publish a release or
   deploy the Hub updater feed. Main-output vertical routing is still disabled.

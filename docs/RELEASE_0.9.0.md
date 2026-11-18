@@ -60,7 +60,7 @@ access against the deployed Hub and real upgrade use still require creator testi
 
 215 Python tests, native Windows compilation, Chromium interface checks, packaged
 YouTube/TikTok dependency checks, desktop startup/icon checks and installer smoke
-testing passed. Final build: https://github.com/Dakotalamb/ForgeCast/actions/runs/38195227856
+testing passed. Final build: https://github.com/Dakotalamb/FDGCast/actions/runs/38195227856
 
 Installer: `FDGCast-0.9.0-preview-win-x64-setup.exe`
 

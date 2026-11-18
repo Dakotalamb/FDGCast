@@ -76,6 +76,26 @@ def claim_desktop_instance():
 
 
 def launch():
+    if '--pc-self-check' in sys.argv:
+        # Exercise the frozen native extension and Windows DLL bindings, without settings changes.
+        from forgecast.pc_health import PCMonitor
+        from forgecast.windows_tuning import WindowsTuning
+        monitor = PCMonitor()
+        try:
+            monitor.sample()
+            time.sleep(0.05)
+            sample = monitor.sample()
+            assert sample['available'] and sample['cpu_percent'] is not None
+            assert sample['memory_total_gb'] > 0
+            windows = WindowsTuning()
+            assert windows.read('power') in windows.schemes()
+            assert windows.read('window_animation') in (0,1)
+            assert windows.read('client_animation') in (0,1)
+        except Exception:
+            raise SystemExit(1)
+        finally:
+            monitor.close()
+        return
     if '--extras-self-check' in sys.argv:
         from TikTokLive import TikTokLiveClient
         from TikTokLive.events import CommentEvent, FollowEvent, GiftEvent, LikeEvent, ShareEvent, SubNotifyEvent

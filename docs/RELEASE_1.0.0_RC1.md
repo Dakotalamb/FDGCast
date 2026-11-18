@@ -79,7 +79,7 @@ in progress uses a progress cursor and an accessible busy state.
 232 Python tests passed. Windows portrait framing tests, native OBS 32.2.2
 compilation, all three Chromium interface suites, packaged service/dependency
 checks, desktop startup and installer placement checks passed in:
-https://github.com/Dakotalamb/ForgeCast/actions/runs/39083642640
+https://github.com/Dakotalamb/FDGCast/actions/runs/39083642640
 
 Tested source: c5b808d35b33f592f07bf131ee4b2a0b698e7032.
 Installer: `FDGCast-1.0.0-rc.2-win-x64-setup.exe`.

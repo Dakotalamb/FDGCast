@@ -91,6 +91,10 @@ $('stopAll').onclick=()=>{if(confirm('Stop your main OBS stream and all FDGCast 
 $('preflight').onclick=()=>run(async()=>{const r=await action('preflight');$('preflightResults').replaceChildren(...r.checks.map(c=>{const d=el('div',undefined,'row');d.append(el('strong',c.label),el('span',c.result));if(c.help_tab)d.append(button('Open settings',()=>openTab(c.help_tab)));if(c.fix)d.append(button(c.fix==='unmute'?'Unmute':'Fix audio routing',()=>action('audio_fix',{source_uuid:c.source_uuid,fix:c.fix})));return d;}));$('preflightPanel').hidden=false;},$('preflight'));
 $('recordingExpected').onchange=()=>run(()=>action('preflight_settings',{recording_expected:$('recordingExpected').checked}),$('recordingExpected'));
 $('goLiveAnyway').onclick=()=>{if(confirm('Start your main OBS stream and checked destinations despite the preflight warnings?'))run(()=>state.destinations.some(d=>d.enabled!==false)?action('native_command',{command:'start_all',confirmed:true}):action('obs_command',{command:'StartStream',confirmed:true}),$('goLiveAnyway'));};
+$('optimizerStart').onclick=()=>run(()=>action('stream_optimizer',{enabled:true,options:{priority:$('optimizerPriority').checked,animations:$('optimizerAnimations').checked,power:$('optimizerPower').checked,game_mode:$('optimizerGameMode').checked}}),$('optimizerStart'));
+for(const control of document.querySelectorAll('[data-windows-settings]'))control.onclick=()=>run(()=>action('windows_settings',{page:control.dataset.windowsSettings}),control);
+let optimizerChoicesInitialized=false;
+$('optimizerRestore').onclick=()=>run(()=>action('stream_optimizer',{enabled:false}),$('optimizerRestore'));
 $('doctorSensitivity').onchange=()=>run(()=>action('doctor_settings',{sensitivity:$('doctorSensitivity').value}),$('doctorSensitivity'));
 $('doctorSound').onchange=()=>run(()=>action('doctor_settings',{sound:$('doctorSound').checked}),$('doctorSound'));
 $('doctorNotify').onchange=()=>run(()=>action('doctor_settings',{notifications:$('doctorNotify').checked}),$('doctorNotify'));
@@ -161,7 +165,7 @@ function renderAudio(s){
    new Date(e.time*1000).toLocaleString()+' · '+e.kind.replaceAll('_',' ')+(e.title?' · '+e.title:'')+(e.duration?' · '+e.duration+' sec':''),'muted')));
  if(!s.audio_history?.length)$('audioHistory').append(el('p','No audio incidents recorded yet.','muted'));
 }
-function issue(i) { const d=el('article',undefined,'issue');d.append(el('h3',i.title),el('small',i.confidence.toUpperCase()+' confidence · symptom classification'),el('p',i.evidence),el('p',i.suggestion));return d; }
+function issue(i) { const d=el('article',undefined,'issue');d.append(el('h3',i.title),el('small',i.code?.startsWith('pc_')?'Measured PC resource pressure':'Measured stream symptom'),el('p','What happened: '+i.evidence),el('p','What to try: '+i.suggestion));return d; }
 const transportNames={sending:'SENDING DATA',starting:'WAITING FOR DATA',stalled:'NO DATA · CHECK OUTPUT',reconnecting:'RECONNECTING',stopping:'STOPPING',offline:'OFFLINE',error:'ERROR'};
 function outputEvidence(row){
  const size=row?.width>0&&row?.height>0?row.width+' × '+row.height+' · '+(row.width>row.height?'landscape':row.width<row.height?'portrait':'square'):'Actual resolution not reported yet';
@@ -200,6 +204,25 @@ function renderMainStream(s){
  $('mainAddVertical').textContent=mainPlatform()==='twitch'?'Set up Twitch vertical':'Add separate vertical output';$('mainAddVertical').hidden=mainPlatform()!=='twitch'&&!directVertical(mainPlatform());$('mainAddVertical').disabled=s.demo||!available||(mainPlatform()!=='twitch'&&busy);
 }
 let lastDest='';
+function renderPC(s){
+ const pc=s.pc_health||{}, fresh=pc.available&&Date.now()/1000-pc.sampled_at<10;
+ $('pcMonitorState').textContent=fresh?'MONITORING':'UNAVAILABLE';
+ const percent=value=>Number.isFinite(value)?value.toFixed(1)+'%':'Unavailable';
+ const metrics=[['CPU · whole PC',fresh?percent(pc.cpu_percent):'Unavailable','Combined CPU usage of all apps. First reading needs one sampling interval.'],['GPU · busiest engine',fresh?percent(pc.gpu?.busy_percent):'Unavailable','Busiest physical GPU engine, including game, encoding and copy work.'],['Memory · whole PC',fresh?percent(pc.memory_percent):'Unavailable','Memory in use across Windows and all apps.']];
+ $('pcMetrics').replaceChildren(...metrics.map(([label,value,tip])=>{const card=el('div',undefined,'pc-metric');card.title=tip;card.append(el('strong',label),el('p',value));if(label.startsWith('Memory')&&fresh)card.append(el('small',pc.memory_used_gb+' / '+pc.memory_total_gb+' GB'));return card;}));
+ const findings=fresh?(s.pc_issues||[]):[];
+ $('pcFindings').replaceChildren(...(findings.length?findings.map(issue):[el('p',fresh?'No sustained PC resource pressure detected. Check destination health and Audio Guard below, too.':pc.message||'Waiting for PC measurements.','muted')]));
+ $('pcProcesses').replaceChildren(...(fresh?pc.processes||[]:[]).map(p=>{const row=el('div',undefined,'row');row.append(el('strong',p.name),el('span',percent(p.cpu_percent)+' CPU · '+p.memory_mb+' MB'));return row;}));
+ const rate=(v,unit)=>Number.isFinite(v)?v.toFixed(2)+' '+unit:'Unavailable';
+ $('pcTransfer').textContent=fresh?'Network upload: '+rate(pc.upload_mbps,'Mbps')+' · download: '+rate(pc.download_mbps,'Mbps')+'. Disk read: '+rate(pc.disk_read_mbps,'MB/s')+' · write: '+rate(pc.disk_write_mbps,'MB/s')+'. Network activity includes all interfaces and is not your internet upload capacity.':'Waiting for disk and network measurements.';
+ const optimizer=s.optimizer||{};$('optimizerStatus').textContent=optimizer.message||'Off. No PC settings changed.';
+ $('optimizerStart').disabled=!optimizer.supported||optimizer.enabled||optimizer.pending_restore;
+ $('optimizerRestore').disabled=!optimizer.enabled&&!optimizer.pending_restore;
+ const choices={optimizerPriority:'priority',optimizerAnimations:'animations',optimizerPower:'power',optimizerGameMode:'game_mode'};
+ for(const [id,key] of Object.entries(choices)){if(!optimizerChoicesInitialized)$(id).checked=(optimizer.options||{priority:true,animations:true})[key]===true;$(id).disabled=!optimizer.supported||optimizer.enabled||optimizer.pending_restore;}
+ optimizerChoicesInitialized=true;
+ for(const control of document.querySelectorAll('[data-windows-settings]'))control.disabled=!optimizer.supported;
+}
 function renderHistory(s){
  const history=s.stream_history||{}, rows=history.events||[], filter=$('historySession');
  const selected=filter.value;
@@ -254,8 +277,9 @@ function render(s) {
  $('render').textContent=fresh&&stats.averageFrameRenderTime!==undefined?stats.averageFrameRenderTime.toFixed(1)+' ms':'—';
  $('outputCount').textContent=s.native_connected?s.outputs.filter(x=>x.active).length:'—';
  $('persistence').textContent=s.secret_persistence==='Session memory only'?'Connections are stored for this session only. Account tokens stay private.':'Saved connection details stay on this computer. Account tokens stay private.';
- $('health').replaceChildren(...((s.issues.length||s.stream_history?.issues?.length)?[...(s.stream_history?.issues||[]),...s.issues].map(issue):[el('p',s.obs_connected?'No new frame-loss counters in the latest sample. This does not verify your whole stream.':'Connect OBS for live measurements.',s.obs_connected?'ok':'muted')]));
+ $('health').replaceChildren(...((s.issues.length||s.pc_issues?.length||s.stream_history?.issues?.length)?[...(s.stream_history?.issues||[]),...(s.pc_issues?.length?s.pc_issues:s.issues)].map(issue):[el('p',s.obs_connected?'No new frame-loss counters in the latest sample. This does not verify your whole stream.':'Connect OBS for live measurements.',s.obs_connected?'ok':'muted')]));
  $('statuses').replaceChildren(...Object.entries(s.statuses).map(([k,v])=>connectionCard(k,v)));
+ renderPC(s);
  renderMainStream(s);
  renderSuite(s);
  $('chatConnectionStatus').replaceChildren(...Object.entries(s.statuses).map(([k,v])=>connectionCard(k,v)));

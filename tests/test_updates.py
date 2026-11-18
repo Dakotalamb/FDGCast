@@ -40,6 +40,14 @@ class UpdateTests(unittest.IsolatedAsyncioTestCase):
         for url in ['http://hub.example/setup.exe','https://evil.example/setup.exe','javascript:alert(1)','https://user:pass@hub.example/setup.exe']:
             with self.assertRaises(ValueError):release_link(url,'https://hub.example')
         self.assertEqual(release_link('/downloads/setup.exe','https://hub.example'),'https://hub.example/downloads/setup.exe')
+    async def test_renamed_repository_release_links_and_legacy_redirects(self):
+        for repo in ('FDGCast','ForgeCast'):
+            url=f'https://github.com/Dakotalamb/{repo}/releases/download/v1.0.4/setup.exe'
+            self.assertEqual(release_link(url,'https://hub.example'),url)
+        for repo in ('FDGCast-Evil','OtherOwner/FDGCast'):
+            with self.assertRaises(ValueError):
+                release_link(f'https://github.com/Dakotalamb/{repo}/releases/download/setup.exe','https://hub.example')
+
     async def test_check_is_public_and_dismissal_survives_restart(self):
         future=str(int(__version__.split('.')[0])+1)+'.0.0-preview'
         self.s.session=Session(json.dumps({'schema_version':1,'version':future,'platform':'windows-x64','notes':'New release','download_url':'/downloads/setup.exe'}).encode())

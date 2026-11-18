@@ -1,3 +1,19 @@
+# FDGCast 1.0.5
+
+[Download the stable Windows release](https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.5).
+
+Stream Doctor shows whole-PC CPU, GPU and memory, busiest apps and clearer
+what-happened / what-to-try guidance. The selectable streaming profile can
+change OBS priority, reduce desktop animations, use an optional existing High
+performance plan on AC, and set the optional Windows 11 Game Mode preference.
+Changes are temporary and recoverable; performance gains are not guaranteed.
+The branded installer is included. Core chat/diagnostics remain free.
+
+Read [release notes](docs/RELEASE_1.0.5.md) and
+[setup, recovery and website handoff](docs/STREAM_DOCTOR_PC.md).
+Close OBS and Companion before installation. Repository: **Dakotalamb/FDGCast**.
+Earlier version notes below are historical.
+
 ## Stable 1.0.4 — activity connection visibility and licensing
 
 Activity Feed now keeps connection readiness visible above old event cards, with
@@ -10,7 +26,7 @@ paid overlay access remains unchanged.
 
 # FDGCast 1.0.3 — TikTok LIVE chat and activity
 
-[Download the Windows update](https://github.com/Dakotalamb/ForgeCast/releases/tag/v1.0.3).
+[Download the Windows update](https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.3).
 
 Read TikTok LIVE chat and activity without sending video from FDGCast. The Combined Activity Feed shows platform icons, follows, gifts, subscription notifications and grouped likes/shares. The TikTok creator must have a public LIVE running; access remains experimental and receive-only.
 
@@ -20,7 +36,7 @@ Earlier release notes follow.
 
 # FDGCast 1.0.2 — horizontal and vertical output update
 
-[Download Windows installer](https://github.com/Dakotalamb/ForgeCast/releases/tag/v1.0.2).
+[Download Windows installer](https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.2).
 
 Twitch dual format now uses OBS Additional Canvas. YouTube has separate Horizontal and Vertical presets, and output health shows actual sending progress. OBS keeps control of its main encoder.
 
@@ -35,7 +51,7 @@ Review candidate only; stable 1.0.1 and the Hub feed are unchanged. See
 
 # FDGCast 1.0.1 — emergency recovery update
 
-[Download the recovery release](https://github.com/Dakotalamb/ForgeCast/releases/tag/v1.0.1).
+[Download the recovery release](https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.1).
 
 1.0.1 removes the 1.0.0 main-output video override and clears its saved preference.
 OBS controls its own main encoder again. Main-output Vertical Studio routing is
@@ -47,7 +63,7 @@ is disabled by 1.0.1.
 
 # FDGCast 1.0.0
 
-[Download Windows installer and release notes](https://github.com/Dakotalamb/ForgeCast/releases/tag/v1.0.0).
+[Download Windows installer and release notes](https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.0).
 
 Windows release with a dedicated Vertical Studio, draw-on-scene camera crops,
 prominent automatic scene following, live-source previews and saved

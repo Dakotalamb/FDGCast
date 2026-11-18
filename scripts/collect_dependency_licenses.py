@@ -15,7 +15,7 @@ def collect(output):
     output.mkdir(parents=True, exist_ok=True)
     supplements = Path(__file__).resolve().parent.parent / 'third_party_notices'
     shutil.copytree(supplements, output / 'supplemental', dirs_exist_ok=True)
-    pending = ['aiohttp', 'grpcio', 'protobuf', 'tzdata', 'TikTokLive', 'pywebview', 'pyinstaller']
+    pending = ['aiohttp', 'grpcio', 'protobuf', 'tzdata', 'TikTokLive', 'psutil', 'pywebview', 'pyinstaller']
     seen, inventory = set(), []
     while pending:
         name = pending.pop()

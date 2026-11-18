@@ -39,9 +39,9 @@ COPYING.GPL3 contains the complete GNU GPL version 3 text.
 
 Each release is built from the commit identified by its GitHub tag. Its source,
 including build scripts and dependency versions, is available from:
-https://github.com/Dakotalamb/ForgeCast/releases
+https://github.com/Dakotalamb/FDGCast/releases
 
-For this release: https://github.com/Dakotalamb/ForgeCast/tree/v1.0.4
+For this release: https://github.com/Dakotalamb/FDGCast/tree/v1.0.5
 Download the matching tag's source archive, not a potentially older default
 branch. The official installer includes these license texts and the source link.
 Upstream source locations for packaged Python distributions are recorded in the
