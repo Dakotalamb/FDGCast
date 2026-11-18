@@ -74,6 +74,7 @@ on a live game/stream require real-machine testing. No performance gain is claim
   Do not advertise guaranteed FPS gains, automatic root-cause detection, thermal
   monitoring, VRAM monitoring or a universal game optimizer.
 - Old installed apps only accept the legacy ForgeCast release path or the Hub's
-  own HTTPS host. Keep the existing stable feed URLs compatible until clients
+  own HTTPS host. The stable 1.0.4 feed example deliberately keeps the legacy
+  release path for these clients. Keep the existing stable feed URLs compatible until clients
   have upgraded to a version that accepts the new FDGCast GitHub path.
 - No new Hub endpoints, paid entitlements, or browser permissions are required.
