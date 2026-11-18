@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import time
 import threading
+import uuid
 from functools import wraps
 
 try:
@@ -20,6 +21,7 @@ except ImportError:
     psutil = None
 
 from .storage import atomic_json
+from .windows_tuning import WindowsTuning, LABELS, HIGH_PERFORMANCE, options as optimizer_options
 
 
 def synchronized(method):
@@ -210,6 +212,25 @@ class PCMonitor:
         if self.gpu: self.gpu.close()
 
 
+def valid_restore_record(record):
+    if not isinstance(record,dict) or ('attempted' in record and not isinstance(record['attempted'],bool)):
+        return False
+    if record.get('kind') == 'windows':
+        setting,original,applied = record.get('setting'),record.get('original'),record.get('applied')
+        if setting == 'power':
+            try: return str(uuid.UUID(original)) == original and applied == HIGH_PERFORMANCE
+            except (ValueError,TypeError,AttributeError): return False
+        if setting in ('window_animation','client_animation'):
+            return type(original) is int and original in (0,1) and applied == 0
+        if setting == 'game_mode':
+            return (original is None or type(original) is int and original in (0,1)) and applied == 1
+        return False
+    created = record.get('created')
+    return (record.get('kind') in (None,'priority') and type(record.get('pid')) is int and record['pid'] > 0
+        and type(created) in (int,float) and math.isfinite(created) and created > 0
+        and record.get('original') == 32 and record.get('applied') == 32768)
+
+
 class StreamOptimizer:
     """Opt-in for the current stream only. Write restoration journal BEFORE mutation."""
     def __init__(self, directory, demo=False):
@@ -217,7 +238,10 @@ class StreamOptimizer:
         self.path = Path(directory)/'optimizer-restore.json'
         self.demo = demo
         self.records = []
+        self.windows = None
+        self.applied = []
         self.enabled = False
+        self.recovery_error = False
         self.message = 'Off. No PC settings changed.'
         self.last_live = time.monotonic()
         if not demo:
@@ -225,27 +249,32 @@ class StreamOptimizer:
         if not demo and self.path.exists():
             try:
                 records = json.loads(self.path.read_text(encoding='utf-8'))
-                if isinstance(records,list) and len(records)<=16:
-                    self.records = records
-                    self.restore()
+                if not isinstance(records,list) or len(records)>16 or not all(valid_restore_record(r) for r in records):
+                    raise ValueError('Invalid restoration record')
+                self.records = records
+                self.restore()
             except (ValueError, OSError, TypeError):
-                self.message = 'Previous restoration record could not be read. Restart OBS to reset its process priority.'
+                self.recovery_error = True
+                self.message = 'Previous restoration record could not be read. Review your Windows settings and restart OBS to clear its temporary priority.'
 
     def public(self):
         return dict(supported=bool(psutil and os.name=='nt' and not self.demo), enabled=self.enabled,
-            pending_restore=bool(self.records and not self.enabled), message=self.message)
+            pending_restore=bool(self.recovery_error or self.records and not self.enabled), message=self.message, applied=list(self.applied))
 
     @synchronized
-    def start(self, live):
+    def start(self, live, selected=None):
         if not self.public()['supported']:
             raise ValueError('Stream Optimizer is available in the Windows desktop app, outside demo mode.')
         if live is not True:
             raise ValueError('Start a stream first, then enable Stream Optimizer for this session.')
-        if self.records or self.enabled:
+        if self.records or self.enabled or self.recovery_error:
             raise ValueError('Restore the previous optimization before enabling it again.')
+        # Preserve the old priority-only contract when called by an older client.
+        selected = optimizer_options(selected) if selected is not None else dict(priority=True,animations=False,power=False,game_mode=False)
         records = []
         for process in psutil.process_iter(['name'], ad_value=None):
             try:
+                if not selected['priority']: continue
                 if (process.info['name'] or '').lower() not in ('obs64.exe','obs32.exe'):
                     continue
                 original = process.nice()
@@ -253,11 +282,19 @@ class StreamOptimizer:
                     continue
                 records.append(dict(pid=process.pid,created=process.create_time(),original=int(original),applied=int(psutil.ABOVE_NORMAL_PRIORITY_CLASS)))
             except (psutil.Error, OSError): pass
-        if not records:
-            raise ValueError('No OBS process at Normal priority was found. Existing custom priorities are kept.')
         if len(records)>1:
             raise ValueError('More than one OBS instance is running. Close unused instances before using Stream Optimizer.')
+        if any(selected[k] for k in ('animations','power','game_mode')):
+            try:
+                if self.windows is None: self.windows = WindowsTuning()
+                records += self.windows.prepare(selected)
+            except OSError as exc:
+                raise ValueError('Windows settings could not be prepared. No changes were made. '+str(exc))
+        if not records:
+            raise ValueError('The selected settings already match, or OBS has a custom priority. No changes were needed.')
+        for record in records: record['attempted'] = False
         self.records = records
+        self.applied = []
         try:
             atomic_json(self.path, records)
         except OSError:
@@ -266,49 +303,88 @@ class StreamOptimizer:
         changed = False
         try:
             for record in records:
-                process = psutil.Process(record['pid'])
-                if process.create_time()==record['created'] and process.nice()==record['original']:
-                    process.nice(record['applied'])
+                if record.get('kind') == 'windows':
+                    if self.windows.read(record['setting']) != record['original']:
+                        raise OSError('A Windows setting changed while the optimizer was preparing. Try again.')
+                    record['attempted'] = True
+                    try: atomic_json(self.path,self.records)
+                    except OSError:
+                        record['attempted'] = False
+                        raise
+                    self.windows.write(record['setting'],record['applied'])
+                    if self.windows.read(record['setting']) != record['applied']:
+                        raise OSError('Windows did not confirm the requested setting.')
+                    self.applied.append(LABELS[record['setting']])
                     changed = True
+                else:
+                    process = psutil.Process(record['pid'])
+                    if process.create_time()==record['created'] and process.nice()==record['original']:
+                        record['attempted'] = True
+                        try: atomic_json(self.path,self.records)
+                        except OSError:
+                            record['attempted'] = False
+                            raise
+                        process.nice(record['applied'])
+                        self.applied.append(LABELS['priority'])
+                        changed = True
         except (psutil.Error, OSError):
             self.restore()
-            raise ValueError('Windows did not allow the priority change. Any completed changes were restored; check the status.')
+            raise ValueError('Windows did not confirm all selected changes. Restoration was attempted; check the status and use Restore now if needed.')
         self.enabled = changed
         self.last_live = time.monotonic()
-        self.message = 'Active: OBS CPU priority is temporarily Above normal. Game settings are unchanged.' if changed else 'No eligible OBS process remained. No optimization was applied.'
+        self.message = 'Active: '+', '.join(self.applied)+'. These changes are temporary.' if changed else 'No eligible changes remained. No optimization was applied.'
         if not changed: self.restore()
 
     @synchronized
     def restore(self):
-        if self.demo:
+        if self.demo or self.recovery_error:
             return
         self.enabled = False
         pending = []
-        for record in self.records:
+        for record in reversed(self.records):
             try:
+                if record.get('attempted') is False: continue
+                if record.get('kind') == 'windows':
+                    if self.windows is None: self.windows = WindowsTuning()
+                    if self.windows.read(record['setting']) == record['applied']:
+                        self.windows.write(record['setting'],record['original'])
+                        if self.windows.read(record['setting']) != record['original']:
+                            raise OSError('Windows setting restoration was not confirmed.')
+                    continue
                 if not psutil: pending.append(record); continue
                 process = psutil.Process(int(record['pid']))
                 if process.create_time()==record['created'] and int(process.nice())==record['applied']:
                     process.nice(record['original'])
-            except psutil.NoSuchProcess: pass
-            except (psutil.Error, OSError, KeyError, TypeError, ValueError): pending.append(record)
-        self.records = pending
+            except Exception as exc:
+                if psutil and isinstance(exc,psutil.NoSuchProcess): continue
+                pending.append(record)
+        self.records = list(reversed(pending))
+        if not pending: self.applied = []
         if pending:
             try: atomic_json(self.path, pending)
             except OSError: pass
-            self.message = 'Restoration needs attention. Close OBS to reset its process priority, or try Restore now again.'
+            self.message = 'Restoration needs attention: '+', '.join(LABELS.get(r.get('setting'),'OBS scheduling priority') for r in pending)+'. Try Restore now again; Windows settings may need manual review.'
         else:
             try:
                 self.path.unlink(missing_ok=True)
             except OSError:
-                self.message = 'Priority restored. The recovery record could not be removed; restart Companion to retry cleanup.'
+                self.message = 'Settings restored. The recovery record could not be removed; restart Companion to retry cleanup.'
                 return
-            self.message = 'Off. Temporary priority changes restored; later manual priority changes were kept.'
+            self.message = 'Off. Temporary changes restored; later manual changes were kept.'
 
     @synchronized
     def tick(self, live, now=None):
         now = time.monotonic() if now is None else now
         if not self.enabled: return
+        if any(r.get('setting')=='power' for r in self.records):
+            try:
+                if not self.windows.ac_power():
+                    self.restore()
+                    self.message += ' Power optimization ended because plugged-in power is no longer confirmed.'
+                    return
+            except OSError:
+                self.restore()
+                return
         if live is True: self.last_live = now
         elif live is False or now-self.last_live >= 10:
             self.restore()

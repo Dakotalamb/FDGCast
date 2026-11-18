@@ -1,6 +1,6 @@
-# Branded installer preview
+# Branded installer — included in stable 1.0.5
 
-The 1.0.5-rc.2 preview uses native Inno Setup dark styling with FDGCast charcoal,
+The 1.0.5 installer uses native Inno Setup dark styling with FDGCast charcoal,
 orange accents, original logo artwork, plain-language welcome/upgrade copy,
 readable license and setup pages, real file-phase progress, and a connection
 guide link on the finish screen. Desktop shortcuts and launching Companion are
@@ -8,10 +8,9 @@ optional. No stream starts automatically.
 
 The application identity, OBS module paths, configuration location, protected
 credentials and uninstall behavior are preserved. This is the plugin + Companion
-installer, not the separate FDGCast Studio project. The preview is published separately as a prerelease after its checks pass.
-Stable 1.0.4 and its updater manifest are not replaced by this preview.
-Installing the preview updates the existing plugin + Companion installation;
-it does not create a separate OBS installation.
+installer. Stable 1.0.5 includes the previously reviewed branding and the expanded
+Stream Doctor / Windows streaming profile. Installing updates the existing
+plugin + Companion installation; it does not create a separate OBS installation.
 
 Build with Inno Setup 6.7.4 (pinned in CI). All installed license notices remain
 included; the additional raw Markdown information page has been removed from the

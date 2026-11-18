@@ -1,80 +1,68 @@
-# FDGCast 1.0.5-rc.4 — Stream Doctor PC monitoring preview
+# Stream Doctor and Windows streaming profile — stable 1.0.5
 
-The GitHub repository has been renamed from Dakotalamb/ForgeCast to
-[Dakotalamb/FDGCast](https://github.com/Dakotalamb/FDGCast). App help, installer,
-source links and update-link validation now recognize the new name. Update
-validation also accepts existing legacy ForgeCast release-feed links. Internal
-module IDs and the existing settings folder stay compatible with upgrades.
+See [1.0.5 release notes](RELEASE_1.0.5.md) for the current feature list, setup,
+restoration behavior, validation and limits. The branded installer and PC monitor
+are included in stable 1.0.5; prerelease builds are historical.
 
-## Easier Stream Doctor
+## Monitoring
 
-The Companion has three prominent whole-PC cards: CPU, GPU and memory. These
-are separate from OBS-only CPU usage. The native OBS Doctor dock shows the same
-three measurements without requiring another browser preview.
+Whole-PC CPU, Windows GPU Engine utilization and system memory are separate from
+OBS-only counters. Measurements refresh every three seconds; readable busiest
+apps refresh every six. Sustained CPU/GPU/memory usage at or above 90% warns after
+eight seconds. GPU process counters are combined per physical engine, with the
+busiest engine displayed. Independent engines/adapters are not added together.
 
-- PC CPU, memory, network and disk counters refresh every three seconds.
-- Windows GPU Engine performance counters measure the busiest physical engine
-  across adapters; processes using the same physical engine are combined.
-  Independent engines and adapters are not added together. Windows counters
-  must be supported by the OS, driver and GPU. Unavailable is never shown as 0%.
-- Busiest apps refresh every six seconds, with CPU normalized to a share of the
-  entire PC. Up to five CPU consumers and five memory consumers are displayed.
-- Whole-PC CPU/GPU/memory usage at or above 90% for eight seconds produces a
-  resource-pressure warning. OBS rendering and encoding symptoms get a possible
-  contributor explanation when simultaneous matching pressure is measured.
-- Cards explain what happened and what to try. High usage is evidence of load,
-  not proof of a faulty app, driver, or component.
-- Process names/PIDs are local display only, excluded from diagnostic exports
-  and the OBS bridge. Diagnostic exports include the latest numeric PC sample.
-  Paths, command lines and window titles are not collected.
+Local app names/PIDs are excluded from exported diagnostics and the native OBS
+bridge. Numeric measurements are included in reviewed diagnostic exports.
+No process paths, command lines or window titles are collected. Network activity
+can include virtual interfaces and is not measured internet capacity.
 
-This does not measure VRAM, temperatures, power throttling, driver resets,
-individual source/GPU-process cost, per-game FPS, or available internet upload.
-Network totals may include virtual interfaces; they are activity, not capacity.
-Missing measurements and stream telemetry stay visibly unavailable.
+## Temporary settings
 
-## Stream Optimizer — opt-in for the current stream
+Select the options you want while streaming and choose Apply streaming profile.
+OBS priority and two desktop-animation preferences can be changed. An existing
+High performance power plan and Windows 11 Game Mode preference are optional.
+Animations are a minor desktop setting, not a substantial game-performance claim;
+power may increase heat/use; Game Mode may need a game restart.
 
-Start your stream, open Companion → Stream Doctor, then choose **Optimize this
-stream**. On Windows this raises a single OBS process from Normal to Above normal
-CPU scheduling priority. It keeps existing custom priority choices. Multiple OBS
-instances require the user to close unused instances first. This is a modest
-CPU-contention aid, not a promise to optimize every game or fix GPU/network limits.
-Game settings and background processes are left alone. There are no security,
-service, registry, power-plan, encoder, affinity or bitrate changes.
+The restoration journal is saved before every attempted change. Startup recovery
+accepts legacy priority-only records as well as the new Windows records. Invalid
+records block new optimization. PID creation times prevent changing a reused
+process; only unchanged applied values are restored, preserving detectably later
+manual edits. Partial failures roll back attempted changes in reverse order.
 
-The UI shows exactly what changed and provides **Restore now**. Restoration
-runs when all observed main/additional streams stop, telemetry has been missing
-for ten seconds, or Companion closes normally. It is not automatically enabled
-for subsequent streams. A restoration journal is written before mutation and
-stores PID plus process creation time to avoid touching a reused PID. Later
-manual priority changes are preserved. Failed restoration remains visible and
-can be retried. On a Companion crash, restoration is retried on its next launch;
-closing OBS also clears its temporary process priority. Keep Companion running.
+Restores on observed stream stop, ten seconds of telemetry loss, normal server
+cleanup, desktop process exit and next launch after a crash. AC-power loss also
+ends an active power-plan profile. Keep Companion running; reopen it after a
+crash to restore system preferences. Restore now retries failed restorations.
 
-## Preview and validation
+Manual review buttons open Windows recording, Game Mode, startup and notification
+settings. They do not silently change those settings or claim to verify them.
+No automatic app shutdown, suspension, service disabling, driver, security,
+network, audio or game-file changes are made.
 
-This branch includes the branded installer preview. It publishes a new,
-non-latest prerelease only after the Windows build and existing checks pass.
-It does not replace stable 1.0.4 or change the Hub update feed.
+## Implementation references
 
-Coverage includes sustained resource-pressure thresholds, physical-engine GPU
-aggregation, restoration journal ordering, stop/disconnect/restart recovery,
-PID reuse, manual priority changes, failed restoration and demo-mode controls.
-Windows build/browser/installer results are recorded by GitHub Actions. A CI VM
-may lack physical GPU counters; NVIDIA/AMD/Intel hardware readings and effects
-on a live game/stream require real-machine testing. No performance gain is claimed.
+- [SystemParametersInfo](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-systemparametersinfow)
+- [Power scheme management](https://learn.microsoft.com/en-us/windows/win32/power/managing-power-schemes)
+- [Windows 11 documented Game Mode preference](https://learn.microsoft.com/en-us/windows/apps/develop/settings/settings-windows-11)
+- [Windows Settings launch URIs](https://learn.microsoft.com/en-us/windows/apps/develop/launch/launch-settings)
 
 ## Website builder handoff
 
-- Use https://github.com/Dakotalamb/FDGCast for repository and release links.
-- Keep the public stable download/feed on 1.0.4 until stable promotion.
-- If listing this preview, label it **1.0.5-rc.4 — PC monitoring preview**.
-- Describe CPU/GPU/memory monitoring and optional temporary OBS priority assist.
-  Do not advertise guaranteed FPS gains, automatic root-cause detection, thermal
-  monitoring, VRAM monitoring or a universal game optimizer.
-- Old installed apps only accept the legacy ForgeCast release path or the Hub's
-  own HTTPS host. The stable 1.0.4 feed example deliberately keeps the legacy
-  release path for these clients. Keep the existing stable feed URLs compatible until clients
-  have upgraded to a version that accepts the new FDGCast GitHub path.
-- No new Hub endpoints, paid entitlements, or browser permissions are required.
+1. Stable version: **1.0.5**, Windows x64 / OBS 32.2.2. Remove preview wording from
+   the public current-download card when promoting this release.
+2. Repository: https://github.com/Dakotalamb/FDGCast
+3. Release: https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.5
+4. Download: https://github.com/Dakotalamb/FDGCast/releases/download/v1.0.5/FDGCast-1.0.5-win-x64-setup.exe
+5. Copy the release's actual **latest.json** asset unchanged to the Hub endpoint
+   `/fdgcast/releases/latest.json`. It contains the actual binary SHA256 and size.
+6. Older installed apps accept the legacy ForgeCast release path or the Hub's own
+   HTTPS host. The manifest deliberately retains the legacy path; do not rewrite
+   it to the FDGCast path before those clients upgrade. Keep the former repository
+   name unused so its release redirects remain intact.
+7. Promote whole-PC CPU/GPU/memory monitoring, clearer diagnoses, the selectable
+   temporary Windows streaming profile and branded installer. Avoid promises of
+   guaranteed FPS, complete root-cause detection, automatic background-app cleanup,
+   service disabling, thermal or VRAM monitoring.
+8. No new Hub endpoints, permissions, billing or overlay entitlements are needed.

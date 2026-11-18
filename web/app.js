@@ -91,7 +91,9 @@ $('stopAll').onclick=()=>{if(confirm('Stop your main OBS stream and all FDGCast 
 $('preflight').onclick=()=>run(async()=>{const r=await action('preflight');$('preflightResults').replaceChildren(...r.checks.map(c=>{const d=el('div',undefined,'row');d.append(el('strong',c.label),el('span',c.result));if(c.help_tab)d.append(button('Open settings',()=>openTab(c.help_tab)));if(c.fix)d.append(button(c.fix==='unmute'?'Unmute':'Fix audio routing',()=>action('audio_fix',{source_uuid:c.source_uuid,fix:c.fix})));return d;}));$('preflightPanel').hidden=false;},$('preflight'));
 $('recordingExpected').onchange=()=>run(()=>action('preflight_settings',{recording_expected:$('recordingExpected').checked}),$('recordingExpected'));
 $('goLiveAnyway').onclick=()=>{if(confirm('Start your main OBS stream and checked destinations despite the preflight warnings?'))run(()=>state.destinations.some(d=>d.enabled!==false)?action('native_command',{command:'start_all',confirmed:true}):action('obs_command',{command:'StartStream',confirmed:true}),$('goLiveAnyway'));};
-$('optimizerStart').onclick=()=>run(()=>action('stream_optimizer',{enabled:true}),$('optimizerStart'));
+$('optimizerStart').onclick=()=>run(()=>action('stream_optimizer',{enabled:true,options:{priority:$('optimizerPriority').checked,animations:$('optimizerAnimations').checked,power:$('optimizerPower').checked,game_mode:$('optimizerGameMode').checked}}),$('optimizerStart'));
+for(const control of document.querySelectorAll('[data-windows-settings]'))control.onclick=()=>run(()=>action('windows_settings',{page:control.dataset.windowsSettings}),control);
+let optimizerChoicesInitialized=false;
 $('optimizerRestore').onclick=()=>run(()=>action('stream_optimizer',{enabled:false}),$('optimizerRestore'));
 $('doctorSensitivity').onchange=()=>run(()=>action('doctor_settings',{sensitivity:$('doctorSensitivity').value}),$('doctorSensitivity'));
 $('doctorSound').onchange=()=>run(()=>action('doctor_settings',{sound:$('doctorSound').checked}),$('doctorSound'));
@@ -216,6 +218,10 @@ function renderPC(s){
  const optimizer=s.optimizer||{};$('optimizerStatus').textContent=optimizer.message||'Off. No PC settings changed.';
  $('optimizerStart').disabled=!optimizer.supported||optimizer.enabled||optimizer.pending_restore;
  $('optimizerRestore').disabled=!optimizer.enabled&&!optimizer.pending_restore;
+ const choices={optimizerPriority:'priority',optimizerAnimations:'animations',optimizerPower:'power',optimizerGameMode:'game_mode'};
+ for(const [id,key] of Object.entries(choices)){if(!optimizerChoicesInitialized)$(id).checked=(optimizer.options||{priority:true,animations:true})[key]===true;$(id).disabled=!optimizer.supported||optimizer.enabled||optimizer.pending_restore;}
+ optimizerChoicesInitialized=true;
+ for(const control of document.querySelectorAll('[data-windows-settings]'))control.disabled=!optimizer.supported;
 }
 function renderHistory(s){
  const history=s.stream_history||{}, rows=history.events||[], filter=$('historySession');

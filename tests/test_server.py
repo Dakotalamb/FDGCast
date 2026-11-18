@@ -19,6 +19,32 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
         await self.client.close()
         self.temp.cleanup()
 
+    async def test_optimizer_requires_auth_and_demo_cannot_open_windows_settings(self):
+        with patch.object(self.state.optimizer,'start') as start, patch('forgecast.server.open_settings') as settings:
+            for op in ({'op':'stream_optimizer','enabled':True},{'op':'windows_settings','page':'captures'}):
+                response=await self.client.post('/api/action',headers={'Host':'127.0.0.1:17654'},json=op)
+                self.assertEqual(response.status,401)
+                response=await self.client.post('/api/action',headers=self.headers,json=op)
+                self.assertEqual(response.status,400)
+            start.assert_not_called();settings.assert_not_called()
+
+    async def test_optimizer_forwards_only_valid_choices_and_saves_after_success(self):
+        self.state.demo=False
+        selected=dict(priority=False,animations=True,power=False,game_mode=False)
+        with patch.object(self.state.optimizer,'start') as start:
+            response=await self.client.post('/api/action',headers=self.headers,json={'op':'stream_optimizer','enabled':True,'options':selected})
+            self.assertEqual(response.status,200)
+            start.assert_called_once_with(None,selected)
+            self.assertEqual(self.state.config['optimizer_options'],selected)
+        with patch.object(self.state.optimizer,'start') as start:
+            response=await self.client.post('/api/action',headers=self.headers,json={'op':'stream_optimizer','enabled':True,'options':{'power':'yes'}})
+            self.assertEqual(response.status,400);start.assert_not_called()
+        with patch.object(self.state.optimizer,'start',side_effect=ValueError('Windows denied the change')):
+            response=await self.client.post('/api/action',headers=self.headers,json={'op':'stream_optimizer','enabled':True,'options':dict(selected,power=True)})
+            self.assertEqual(response.status,400)
+            self.assertEqual(self.state.config['optimizer_options'],selected)
+        self.state.demo=True
+
     async def test_pairing_code_retained_only_in_authenticated_form_endpoint(self):
         self.state.vault.set('hub_token', 'SAVED-PAIR-CODE')
         response = await self.client.get('/api/pairing', headers=self.headers)

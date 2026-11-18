@@ -1,11 +1,18 @@
-## Preview 1.0.5-rc.4 — clearer Stream Doctor and PC monitoring
+# FDGCast 1.0.5
 
-Stream Doctor now shows whole-PC CPU, GPU and memory alongside OBS frame health,
-plus busiest apps and disk/network activity. Its optional session-only Stream
-Optimizer temporarily adjusts OBS priority and restores it when observed streams
-stop. Read [coverage, limits and recovery](docs/STREAM_DOCTOR_PC.md).
-The GitHub repository is now **Dakotalamb/FDGCast**. Stable remains 1.0.4 while
-this preview is checked on real streaming PCs.
+[Download the stable Windows release](https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.5).
+
+Stream Doctor shows whole-PC CPU, GPU and memory, busiest apps and clearer
+what-happened / what-to-try guidance. The selectable streaming profile can
+change OBS priority, reduce desktop animations, use an optional existing High
+performance plan on AC, and set the optional Windows 11 Game Mode preference.
+Changes are temporary and recoverable; performance gains are not guaranteed.
+The branded installer is included. Core chat/diagnostics remain free.
+
+Read [release notes](docs/RELEASE_1.0.5.md) and
+[setup, recovery and website handoff](docs/STREAM_DOCTOR_PC.md).
+Close OBS and Companion before installation. Repository: **Dakotalamb/FDGCast**.
+Earlier version notes below are historical.
 
 ## Stable 1.0.4 — activity connection visibility and licensing
 

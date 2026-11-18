@@ -36,6 +36,7 @@ from .overlay_studio import ACTIONS as STUDIO_ACTIONS, studio_action, studio_ass
 from .platforms import PLATFORMS, CATALOG, require_picture_support
 from .activity_status import activity_connection
 from .pc_health import PCMonitor, StreamOptimizer
+from .windows_tuning import options as optimizer_options, open_settings
 from . import __version__
 
 PORT = 17654
@@ -234,7 +235,7 @@ class State:
                     native_connected=time.time()-self.native_seen < 5,
                     vertical_canvas={**self.native_canvas, 'available':'vertical_canvas_v1' in self.native_features} if time.time()-self.native_seen < 5 else {},
                     main_output=self.main_output if time.time()-self.native_seen < 5 else None,
-                    stats=self.stats, issues=self.current_issues, pc_health=self.pc_monitor.current, pc_issues=self.pc_issues, optimizer=self.optimizer.public(), scene=self.scene,
+                    stats=self.stats, issues=self.current_issues, pc_health=self.pc_monitor.current, pc_issues=self.pc_issues, optimizer={**self.optimizer.public(), 'options':self.config.get('optimizer_options',optimizer_options())}, scene=self.scene,
                     audio_sound_custom=self.audio_sound_path.exists(), audio_guard=self.audio.current, audio_settings=self.audio.settings, audio_history=list(self.audio.history),
                     stream_history=self.history.public(), doctor_notifications=self.config.get("doctor_notifications", True), doctor_sound=self.config.get("doctor_sound",False), doctor_sensitivity=self.doctor.sensitivity,
                     output_errors=self.output_errors,
@@ -690,9 +691,14 @@ async def action(request):
             if not isinstance(data.get('enabled'), bool): raise ValueError('Choose whether to enable Stream Optimizer.')
             async with s.optimizer_lock:
                 if data['enabled']:
-                    await asyncio.to_thread(s.optimizer.start, observed_stream_state(s))
+                    selected = optimizer_options(data['options']) if 'options' in data else dict(priority=True,animations=False,power=False,game_mode=False)
+                    await asyncio.to_thread(s.optimizer.start, observed_stream_state(s), selected)
+                    s.config['optimizer_options'] = selected
+                    s.save()
                 else:
                     await asyncio.to_thread(s.optimizer.restore)
+        elif op == 'windows_settings':
+            await asyncio.to_thread(open_settings,data.get('page'))
         elif op == 'doctor_settings':
             if 'sound' in data:
                 if not isinstance(data['sound'],bool):raise ValueError('Sound must be true or false.')

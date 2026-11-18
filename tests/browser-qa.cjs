@@ -32,6 +32,8 @@ async function main(){
   await page.locator('[data-tab=doctor]').click();
   assert.equal(await page.locator('#pcMetrics .pc-metric').count(),3,'CPU, GPU and memory remain visible even without telemetry');
   assert.match(await page.locator('#pcMetrics').textContent(),/CPU.*GPU.*Memory/);
+  assert.equal(await page.locator('#optimizerChoices input[type=checkbox]').count(),4,'Windows session profile exposes four clear choices');
+  assert.equal(await page.locator('[data-windows-settings]').count(),4,'Manual review controls remain explicit');
   assert.equal(await page.locator('#optimizerStart').isDisabled(),true,'Optimizer never applies changes in demo mode');
   fs.mkdirSync(path.resolve(__dirname,'../qa'),{recursive:true});
   await page.screenshot({path:path.resolve(__dirname,'../qa/stream-doctor-pc.png'),fullPage:true});
