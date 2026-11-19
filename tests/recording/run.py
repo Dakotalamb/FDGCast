@@ -40,6 +40,7 @@ def main():
         if receiver and receiver.poll() is None:receiver.kill()
         if error:error.close()
         log.close()
+    assert 'Double destroy' not in (out/'recording-libobs.log').read_text(encoding='utf-8'),'OBS fixture source cleanup failed'
     evidence=json.loads((out/'native-results.json').read_text());assert len(evidence)==6
     for row in evidence:
         path=Path(row['path']);assert path.exists() and path.stat().st_size>10000,row
@@ -58,6 +59,7 @@ def main():
         path=out/f'main-{cycle}.flv';v=next(s for s in probe(path) if s['codec_type']=='video');assert (v['width'],v['height'])==(1920,1080)
         color(path,100,100,(0,85,221));color(path,1800,1000,(221,34,0))
     assert len({r['path'] for r in evidence})==6
+    assert len(list(out.glob('*.mkv')))==6,'A failed recording start left an empty file behind'
     print('PASS: real stream + three recording files, encoder/capture reuse, distinct layouts, two independent audio tracks, unique filenames, restart, linked/manual stop isolation and shutdown.')
 
 if __name__=='__main__':main()

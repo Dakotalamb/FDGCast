@@ -259,11 +259,11 @@ public:
         // Same-picture files share a video encoder only when their actual source/settings match.
         if(!custom&&stream)signature=QJsonObject{{"stream_encoder",QString::number(quintptr(stream))}};
         const auto key=QJsonDocument(signature).toJson(QJsonDocument::Compact);s->video=videos[key].lock();
-        if(!s->video){s->video=std::make_shared<RecordingVideo>();if(!s->video->create(p,stream,s->error)){const auto message=s->error;QFile::remove(path);return message;}videos[key]=s->video;}
+        if(!s->video){s->video=std::make_shared<RecordingVideo>();if(!s->video->create(p,stream,s->error)){const auto message=s->error;reservation.remove();return message;}videos[key]=s->video;}
         QSet<int> seen;
-        for(const auto &entry:tracks){const int track=entry.toInt();if(track<1||track>6||seen.contains(track)){QFile::remove(path);return "Invalid audio track selection.";}seen.insert(track);
-            auto audio=audios[track].lock();if(!audio){audio=std::make_shared<RecordingAudio>();if(!audio->create(track)){QFile::remove(path);return "OBS AAC recording audio is unavailable.";}audios[track]=audio;}s->audio.push_back(audio);}
-        if(!s->begin()){const auto message=s->error;history[id]=s->status();s.reset();if(QFileInfo(path).size()==0)QFile::remove(path);return message;}
+        for(const auto &entry:tracks){const int track=entry.toInt();if(track<1||track>6||seen.contains(track)){reservation.remove();return "Invalid audio track selection.";}seen.insert(track);
+            auto audio=audios[track].lock();if(!audio){audio=std::make_shared<RecordingAudio>();if(!audio->create(track)){reservation.remove();return "OBS AAC recording audio is unavailable.";}audios[track]=audio;}s->audio.push_back(audio);}
+        if(!s->begin()){const auto message=s->error;history[id]=s->status();s.reset();if(QFileInfo(path).size()==0)reservation.remove();return message;}
         history.erase(id);files[id]=std::move(s);return {};
     }
     QString startChecked(const QString &id,const QString &collection,obs_encoder_t *stream=nullptr,bool automatic=false){

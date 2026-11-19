@@ -126,7 +126,7 @@ int main(int argc,char **argv){
    std::cout<<"STOPPED "<<cycle<<std::endl;
   }
   auto *vs=vertical?obs_output_get_service(vertical):nullptr,*ms=obs_output_get_service(main);if(vertical)obs_output_release(vertical);if(vs)obs_service_release(vs);obs_output_release(main);obs_service_release(ms);
-  obs_encoder_release(audio);obs_encoder_release(video);obs_set_output_source(0,nullptr);obs_set_output_source(1,nullptr);obs_source_release(sound);obs_scene_release(one);obs_scene_release(two);
+  obs_encoder_release(audio);obs_encoder_release(video);obs_set_output_source(0,nullptr);obs_set_output_source(1,nullptr);obs_source_release(sound);obs_source_remove(obs_scene_get_source(one));obs_source_remove(obs_scene_get_source(two));obs_scene_release(one);obs_scene_release(two);
   // Destroy the portrait view before shutting down OBS.
   if(portrait.encoder){obs_encoder_release(portrait.encoder);portrait.encoder=nullptr;}
   if(portrait.added){obs_view_remove(portrait.view);portrait.added=false;}
@@ -134,6 +134,7 @@ int main(int argc,char **argv){
   if(portrait.canvas){obs_canvas_release(portrait.canvas);portrait.canvas=nullptr;}
   if(compatibleAudio.encoder){obs_encoder_release(compatibleAudio.encoder);compatibleAudio.encoder=nullptr;}
   if(canvas){obs_canvas_remove(canvas->canvas);canvas.reset();}
+  obs_wait_for_destroy_queue();
   obs_shutdown();std::cout<<"PASS native RTMP encoder lifecycle"<<std::endl;return 0;
  } catch(const std::exception &e){std::cerr<<"FAIL "<<e.what()<<std::endl;return 2;}
 }
