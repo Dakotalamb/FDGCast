@@ -5,6 +5,10 @@ on:
     branches: [main, release/0.9.0, next/output-recovery, next/tiktok-live-events, next/license-activity-status, next/branded-installer, next/stream-doctor-pc, next/windows-optimizer, next/recording-studio]
   workflow_dispatch:
 
+concurrency:
+  group: fdgcast-windows-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -339,6 +343,9 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $version = python -c "from forgecast import __version__; print(__version__)"
           if ($LASTEXITCODE -ne 0 -or $version -ne '1.0.6') { throw 'Stable version mismatch' }
+          $currentHead = gh api 'repos/${{ github.repository }}/git/ref/heads/next/recording-studio' --jq '.object.sha'
+          if ($LASTEXITCODE -ne 0) { throw 'Could not confirm latest release source' }
+          if ($currentHead -ne '${{ github.sha }}') { Write-Host 'Newer source exists; skipping publication of superseded build'; exit 0 }
           $tag = 'v1.0.6'
           $installer = 'release/FDGCast-1.0.6-win-x64-setup.exe'
           $hash = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant()

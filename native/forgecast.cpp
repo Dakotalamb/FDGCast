@@ -1108,7 +1108,8 @@ public:
         auto *layout = new QVBoxLayout(this);
         label = new QLabel("FDGCAST · FORGED DESTINY GAMING\nStart the local companion to connect.\n"
                            "Destinations use the OBS picture or a vertical crop/fit.\n"
-                           "Start the main OBS stream first. No automatic starts.", this);
+                           "Start the main stream before added destinations.\n"
+                           "Recording Studio can record without going live.", this);
         label->setWordWrap(true);
         layout->addWidget(label);
         auto *stop = new QPushButton("Stop FDGCast secondary outputs", this);

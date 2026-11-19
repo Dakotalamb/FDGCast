@@ -18,7 +18,9 @@ async function main(){
   assert.equal(await page.locator('#rsMode').inputValue(),'stream');assert.equal(await page.locator('#rsFollow').isChecked(),true);assert.equal(await page.locator('#rsLink').isChecked(),false);assert.equal(await page.locator('#rsLayoutControls').isVisible(),false);assert.equal(await page.locator('#rsDirectory').isVisible(),false);
   await page.locator('[data-rs-preset=camera]').click();assert.equal(await page.locator('#rsSource').inputValue(),'camera');assert.equal(await page.locator('#rsLayer option').count(),2);assert.equal(await page.locator('#rsStart').isDisabled(),true);
   const canvas=page.locator('#rsCanvas');await canvas.focus();const left=Number(await page.locator('#rsX').inputValue());await page.keyboard.press('ArrowLeft');assert.equal(Number(await page.locator('#rsX').inputValue()),left-1);
+  await page.locator('#rsProfileName').fill('My custom recording');
   await page.locator('#rsSave').click();await page.waitForFunction(()=>document.querySelector('#rsSaved').textContent.startsWith('Saved.'));
+  assert.equal(await page.locator('#rsProfileName').inputValue(),'My custom recording','Save must not restore stale polled settings');
   assert.equal(config.profiles.length,1);assert.equal(config.profiles[0].layouts['scene-one'].regions[1].source,'camera');
   await page.locator('#rsStart').click();await page.waitForFunction(()=>document.querySelector('#rsFiles').textContent.includes('recording · recording'));assert.equal(await page.locator('#rsSave').isDisabled(),true);assert.equal(await page.locator('#rsStopAll').isDisabled(),false);
   await page.locator('#rsStop').click();await page.waitForFunction(()=>document.querySelector('#rsFiles').textContent.includes('saved'));assert.equal(await page.locator('#rsSave').isDisabled(),false);
