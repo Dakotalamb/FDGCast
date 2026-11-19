@@ -51,7 +51,7 @@ def main():
         color(path,100,100,red if row['id']=='camera' else blue)
         if row['id']=='shared':color(path,1800,1000,red)
         for track,hz in enumerate((440,880)):
-            raw=subprocess.check_output(['ffmpeg','-v','error','-ss','1','-i',str(path),'-map',f'0:a:{track}','-t','.5','-ac','1','-ar','8000','-f','f32le','-'])
+            raw=subprocess.check_output(['ffmpeg','-v','error','-ss','1','-i',str(path),'-map',f'0:a:{track}','-t','0.5','-ac','1','-ar','8000','-f','f32le','-'])
             values=array.array('f');values.frombytes(raw);assert len(values)>3000 and sum(v*v for v in values)/len(values)>.0001
             measured=sum(x<=0<y for x,y in zip(values,values[1:]))/(len(values)/8000);assert abs(measured-hz)<40,(row['id'],track,measured)
     for cycle in range(2):
