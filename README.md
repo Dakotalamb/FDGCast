@@ -1,16 +1,16 @@
-# FDGCast 1.0.5
+# FDGCast 1.0.6
 
-[Download the stable Windows release](https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.5).
+[Download the stable Windows release](https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.6).
 
-Stream Doctor shows whole-PC CPU, GPU and memory, busiest apps and clearer
-what-happened / what-to-try guidance. The selectable streaming profile can
-change OBS priority, reduce desktop animations, use an optional existing High
-performance plan on AC, and set the optional Windows 11 Game Mode preference.
-Changes are temporary and recoverable; performance gains are not guaranteed.
-The branded installer is included. Core chat/diagnostics remain free.
+Recording Studio saves a different picture from your live stream using existing OBS
+sources. Choose a preset, adjust the preview, then save and record. Same-picture
+recordings can share an active compatible stream encoder; different pictures need
+extra rendering/encoding. One file is the default, with optional extra files and
+separate OBS audio tracks under advanced options. Recording Studio is free.
 
-Read [release notes](docs/RELEASE_1.0.5.md) and
-[setup, recovery and website handoff](docs/STREAM_DOCTOR_PC.md).
+Read [release notes](docs/RELEASE_1.0.6.md) and
+[Recording Studio setup](docs/RECORDING-STUDIO.md). Previous Stream Doctor and
+[Windows streaming profile features](docs/STREAM_DOCTOR_PC.md) are included.
 Close OBS and Companion before installation. Repository: **Dakotalamb/FDGCast**.
 Earlier version notes below are historical.
 

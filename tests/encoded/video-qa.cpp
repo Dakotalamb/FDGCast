@@ -24,9 +24,10 @@ using namespace std::chrono_literals;
 void check(bool ok,const char *message){if(!ok)throw std::runtime_error(message);}
 struct Tone {
  obs_source_t *source;std::atomic<bool> stop{false};std::thread thread;
- Tone(obs_source_t *s):source(s),thread([this]{
+ double frequency;
+ Tone(obs_source_t *s,double hz=440):source(s),frequency(hz),thread([this]{
   uint64_t sample=0;const uint64_t base=os_gettime_ns();const auto start=std::chrono::steady_clock::now();float left[480],right[480];
-  while(!stop){const uint64_t first=sample;for(int i=0;i<480;++i){left[i]=right[i]=.2f*std::sin(2*3.141592653589793*440*(sample++)/48000);}
+  while(!stop){const uint64_t first=sample;for(int i=0;i<480;++i){left[i]=right[i]=.2f*std::sin(2*3.141592653589793*frequency*(sample++)/48000);}
    obs_source_audio a{};a.data[0]=reinterpret_cast<const uint8_t*>(left);a.data[1]=reinterpret_cast<const uint8_t*>(right);
    a.frames=480;a.speakers=SPEAKERS_STEREO;a.format=AUDIO_FORMAT_FLOAT_PLANAR;a.samples_per_sec=48000;a.timestamp=base+first*1000000000ULL/48000;
    obs_source_output_audio(source,&a);std::this_thread::sleep_until(start+std::chrono::nanoseconds(sample*1000000000ULL/48000));
@@ -42,7 +43,7 @@ void loadModule(const std::filesystem::path &root,const char *name){
 }
 obs_source_t *color(const char *name,int w,int h,long long rgba){
  auto *d=obs_data_create();obs_data_set_int(d,"width",w);obs_data_set_int(d,"height",h);obs_data_set_int(d,"color",rgba);
- auto *s=obs_source_create_private("color_source_v3",name,d);obs_data_release(d);check(s,"Color source unavailable");return s;
+ auto *s=obs_source_create("color_source_v3",name,d,nullptr);obs_data_release(d);check(s,"Color source unavailable");return s;
 }
 obs_scene_t *scene(const char *name,long long camera){
  auto *s=obs_scene_create(name);auto *background=color("Blue background",1920,1080,0xffdd5500);
@@ -68,6 +69,7 @@ void waitActive(obs_output_t *o){
  throw std::runtime_error("Output did not send bytes to local RTMP receiver");
 }
 void stop(obs_output_t *o){obs_output_stop(o);for(int i=0;i<200&&obs_output_active(o);++i)std::this_thread::sleep_for(50ms);check(!obs_output_active(o),"Output did not stop");}
+#include "recording-qa.hpp"
 int main(int argc,char **argv){
  QCoreApplication app(argc,argv);
  try {
@@ -80,10 +82,10 @@ int main(int argc,char **argv){
   vi.colorspace=VIDEO_CS_709;vi.range=VIDEO_RANGE_PARTIAL;vi.gpu_conversion=true;vi.scale_type=OBS_SCALE_BILINEAR;
   check(obs_reset_video(&vi)==OBS_VIDEO_SUCCESS,"D3D11 video initialization failed");
   for(auto *name:{"obs-x264","obs-ffmpeg","obs-outputs","rtmp-services","image-source"})loadModule(root,name);
-  obs_post_load_modules();registerPortraitSource();
+  obs_post_load_modules();registerPortraitSource();fdgcast::registerRecordingPicture();
   check(obs_get_source_output_flags("fdgcast_portrait") & OBS_SOURCE_CAP_DISABLED,"Portrait helper must be hidden");
   obs_source_info tone{};tone.id="qa_tone";tone.type=OBS_SOURCE_TYPE_INPUT;tone.output_flags=OBS_SOURCE_AUDIO;
-  tone.get_name=[](void*){return "QA tone";};tone.create=[](obs_data_t*,obs_source_t *s)->void*{return new Tone(s);};tone.destroy=[](void *p){delete static_cast<Tone*>(p);};obs_register_source(&tone);
+  tone.get_name=[](void*){return "QA tone";};tone.create=[](obs_data_t* d,obs_source_t *s)->void*{return new Tone(s,obs_data_has_user_value(d,"frequency")?obs_data_get_double(d,"frequency"):440);};tone.destroy=[](void *p){delete static_cast<Tone*>(p);};obs_register_source(&tone);
   auto *sound=obs_source_create_private("qa_tone","Tone",nullptr);check(sound,"Tone source unavailable");obs_set_output_source(1,sound);
   auto *one=scene("First",0xff0022dd),*two=scene("Second",0xff00dd22);obs_set_output_source(0,obs_scene_get_source(one));
   QJsonObject layouts{{QString::fromUtf8(obs_source_get_uuid(obs_scene_get_source(one))),layout(false)},
@@ -108,7 +110,8 @@ int main(int argc,char **argv){
   }
   auto *main=stream("Main","rtmp://127.0.0.1:19350/live",video,audio);PortraitVideo portrait;
   obs_output_t *vertical=nullptr;
-  for(int cycle=0;cycle<2;++cycle){
+  if(mode=="recording")recordingQA(main,video,one,sound);
+  else for(int cycle=0;cycle<2;++cycle){
    obs_set_output_source(0,obs_scene_get_source(cycle?two:one));
    std::cout<<"READY "<<cycle<<std::endl;std::string command;std::getline(std::cin,command);check(command=="start","Missing start command");
    check(obs_output_start(main),"Main start failed");waitActive(main);
@@ -123,7 +126,7 @@ int main(int argc,char **argv){
    stop(vertical);stop(main);check(obs_output_get_video_encoder(main)==video,"Stopping changed main encoder");
    std::cout<<"STOPPED "<<cycle<<std::endl;
   }
-  auto *vs=obs_output_get_service(vertical),*ms=obs_output_get_service(main);obs_output_release(vertical);obs_service_release(vs);obs_output_release(main);obs_service_release(ms);
+  auto *vs=vertical?obs_output_get_service(vertical):nullptr,*ms=obs_output_get_service(main);if(vertical)obs_output_release(vertical);if(vs)obs_service_release(vs);obs_output_release(main);obs_service_release(ms);
   obs_encoder_release(audio);obs_encoder_release(video);obs_set_output_source(0,nullptr);obs_set_output_source(1,nullptr);obs_source_release(sound);obs_scene_release(one);obs_scene_release(two);
   // Destroy the portrait view before shutting down OBS.
   if(portrait.encoder){obs_encoder_release(portrait.encoder);portrait.encoder=nullptr;}
