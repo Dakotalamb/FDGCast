@@ -174,7 +174,7 @@ struct RecordingFile {
         if(!output){error="OBS file recording output is unavailable.";return false;}
         obs_output_set_video_encoder(output,video->encoder);
         for(size_t i=0;i<audio.size();++i)obs_output_set_audio_encoder(output,audio[i]->encoder,i);
-        auto *signals=obs_output_get_signal_handler(output);signal_handler_connect(signals,"start",onStart,this);signal_handler_connect(signals,"stop",onStop,this);
+        auto *outputSignals=obs_output_get_signal_handler(output);signal_handler_connect(outputSignals,"start",onStart,this);signal_handler_connect(outputSignals,"stop",onStop,this);
         clock.start();accepted=obs_output_start(output);
         if(!accepted){const char *detail=obs_output_get_last_error(output);error=detail&&*detail?QString::fromUtf8(detail).left(600):"Recording could not start. Check the OBS log and encoder capacity.";}
         return accepted;
@@ -201,7 +201,7 @@ struct RecordingFile {
     ~RecordingFile(){
         if(output){
             finish();
-            auto *signals=obs_output_get_signal_handler(output);signal_handler_disconnect(signals,"start",onStart,this);signal_handler_disconnect(signals,"stop",onStop,this);
+            auto *outputSignals=obs_output_get_signal_handler(output);signal_handler_disconnect(outputSignals,"start",onStart,this);signal_handler_disconnect(outputSignals,"stop",onStop,this);
             obs_output_release(output);
         }
     }
@@ -255,7 +255,7 @@ public:
         QTemporaryFile reservation(QDir(dir).filePath("FDGCast-"+id+"-"+QDateTime::currentDateTime().toString("yyyyMMdd-hhmmss")+"-XXXXXX.mkv"));
         reservation.setAutoRemove(false);if(!reservation.open())return "The recording folder cannot be written.";const auto path=reservation.fileName();reservation.close();
         auto s=std::make_unique<RecordingFile>();s->id=id;s->name=p.value("name").toString();s->path=path;s->automatic=automatic;
-        QJsonObject signature=p;for(const auto &key:{"id","name","link_stream"})signature.remove(key);
+        QJsonObject signature=p;for(const auto &key:{"id","name","link_stream","audio_tracks"})signature.remove(key);
         // Same-picture files share a video encoder only when their actual source/settings match.
         if(!custom&&stream)signature=QJsonObject{{"stream_encoder",QString::number(quintptr(stream))}};
         const auto key=QJsonDocument(signature).toJson(QJsonDocument::Compact);s->video=videos[key].lock();

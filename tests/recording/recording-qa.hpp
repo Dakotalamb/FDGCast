@@ -21,7 +21,7 @@ void recordingQA(obs_output_t *main,obs_encoder_t *video,obs_scene_t *sceneOne,o
  for(int cycle=0;cycle<2;++cycle){
   std::cout<<"READY "<<cycle<<std::endl;std::string command;std::getline(std::cin,command);check(command=="start","Missing receiver command");
   check(obs_output_start(main),"Main start failed");waitActive(main);
-  recordings.startLinked("QA",video);
+  if(cycle==0)recordings.startLinked("QA",video);else check(recordings.startChecked("shared","QA",video).isEmpty(),"Manual same-picture recording rejected");
   check(recordings.startChecked("clean","QA",video).isEmpty(),"Clean recording start rejected");check(recordings.startChecked("camera","QA",video).isEmpty(),"Camera recording start rejected");
   wait(false);std::this_thread::sleep_for(2500ms);
   auto rows=recordings.status("QA").value("files").toArray();bool reused=false;

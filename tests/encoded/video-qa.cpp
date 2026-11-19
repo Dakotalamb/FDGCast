@@ -23,8 +23,7 @@
 using namespace std::chrono_literals;
 void check(bool ok,const char *message){if(!ok)throw std::runtime_error(message);}
 struct Tone {
- obs_source_t *source;std::atomic<bool> stop{false};std::thread thread;
- double frequency;
+ obs_source_t *source;double frequency;std::atomic<bool> stop{false};std::thread thread;
  Tone(obs_source_t *s,double hz=440):source(s),frequency(hz),thread([this]{
   uint64_t sample=0;const uint64_t base=os_gettime_ns();const auto start=std::chrono::steady_clock::now();float left[480],right[480];
   while(!stop){const uint64_t first=sample;for(int i=0;i<480;++i){left[i]=right[i]=.2f*std::sin(2*3.141592653589793*frequency*(sample++)/48000);}
