@@ -83,6 +83,8 @@ MODULE_EXPORT const char *obs_module_description(void)
 // OBS transitions. Audio continues through the existing main AAC encoder.
 #include "portrait-video.hpp"
 #include "vertical-canvas-frontend.hpp"
+#include "recording-studio.hpp"
+#include <QFileDialog>
 
 struct Destination {
     std::shared_ptr<PortraitVideo> portrait;
@@ -1073,6 +1075,8 @@ class ForgeDock : public QWidget {
     QTimer timer;
     QLabel *label;
     std::map<QString, std::unique_ptr<Destination>> destinations;
+    fdgcast::RecordingStudio recordings;
+    QLabel *recordingLabel=nullptr;
     std::map<QString, std::weak_ptr<PortraitVideo>> portraitVideos;
     std::weak_ptr<RtmpVideo> rtmpMainVideo;
     std::map<size_t,std::weak_ptr<RtmpAudio>> rtmpAudio;
@@ -1104,12 +1108,17 @@ public:
         auto *layout = new QVBoxLayout(this);
         label = new QLabel("FDGCAST · FORGED DESTINY GAMING\nStart the local companion to connect.\n"
                            "Destinations use the OBS picture or a vertical crop/fit.\n"
-                           "Start the main OBS stream first. No automatic starts.", this);
+                           "Start the main stream before added destinations.\n"
+                           "Recording Studio can record without going live.", this);
         label->setWordWrap(true);
         layout->addWidget(label);
         auto *stop = new QPushButton("Stop FDGCast secondary outputs", this);
         layout->addWidget(stop);
         connect(stop, &QPushButton::clicked, this, [this] { stopAll(); });
+        recordingLabel=new QLabel("Recording Studio · idle",this);layout->addWidget(recordingLabel);
+        auto *stopRecordings=new QPushButton("Stop Recording Studio files",this);layout->addWidget(stopRecordings);
+        stopRecordings->setToolTip("Stops FDGCast recordings only. Your live stream and standard OBS recording continue.");
+        connect(stopRecordings,&QPushButton::clicked,this,[this]{recordings.stopAll();});
         auto *setup = new QPushButton("Open FDGCast app", this);
         layout->addWidget(setup);
         connect(setup, &QPushButton::clicked, this, [this] {
@@ -1248,7 +1257,21 @@ public:
             reply->disconnect(this);
             reply->abort();
         }
+        recordings.shutdown();
         destinations.clear();
+    }
+
+    QString recordingCollection() const {char *name=obs_frontend_get_current_scene_collection();const QString value=name?QString::fromUtf8(name):QString();bfree(name);return value;}
+    QString startRecording(const QString &id){
+        auto *output=obs_frontend_streaming_active()?obs_frontend_get_streaming_output():nullptr;
+        auto *encoder=output?obs_output_get_video_encoder(output):nullptr;
+        const auto result=recordings.startChecked(id,recordingCollection(),encoder);
+        if(output)obs_output_release(output);return result;
+    }
+    void recordingEvent(enum obs_frontend_event event){
+        if(event==OBS_FRONTEND_EVENT_STREAMING_STARTED){auto *output=obs_frontend_get_streaming_output();recordings.startLinked(recordingCollection(),output?obs_output_get_video_encoder(output):nullptr);if(output)obs_output_release(output);}
+        if(event==OBS_FRONTEND_EVENT_STREAMING_STOPPING)recordings.stopAll(true);
+        if(event==OBS_FRONTEND_EVENT_PROFILE_CHANGING||event==OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGING||event==OBS_FRONTEND_EVENT_EXIT)recordings.shutdown();
     }
 
     bool mainBusy() const
@@ -1446,7 +1469,15 @@ public:
     {
         QString action = cmd.value("action").toString();
         QString result = "unsupported_command";
-        if (action == "audio_fix") {
+        if(action=="recording_start"){
+            const auto message=startRecording(cmd.value("profile_id").toString());result=message.isEmpty()?"recording_start_requested":"recording_start_failed";
+        } else if(action=="recording_stop"){recordings.stop(cmd.value("profile_id").toString());result="recording_stop_requested";
+        } else if(action=="recording_stop_all"){recordings.stopAll();result="recording_stop_requested";
+        } else if(action=="recording_folder"){
+            const auto path=QFileDialog::getExistingDirectory(this,"Choose Recording Studio folder",recordings.defaultDirectory);
+            results.append(QJsonObject{{"id",cmd.value("id")},{"status",path.isEmpty()?"recording_directory_cancelled":"recording_directory_chosen"},{"request_id",cmd.value("request_id")},{"directory",path}});
+            return;
+        } else if (action == "audio_fix") {
             result = fixAudio(cmd);
             if (doctorDock) {
                 QString message;
@@ -1502,6 +1533,9 @@ public:
 
     void tick()
     {
+        recordings.tick();
+        if(recordingLabel){const auto rows=recordings.status(recordingCollection()).value("files").toArray();int active=0;for(const auto &entry:rows)if(entry.toObject().value("active").toBool())++active;
+            recordingLabel->setText(active?QString("Recording Studio · %1 file(s) recording").arg(active):"Recording Studio · idle");}
         if (!bulkStarts.isEmpty()) {
             if (obs_frontend_streaming_active()) {
                 const auto selected = bulkStarts; bulkStarts = QJsonArray(); bulkTicks = 0;
@@ -1598,7 +1632,7 @@ public:
         request.setTransferTimeout(3000);
         request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
         const int sentResults = results.size();
-        auto *reply = network.post(request, QJsonDocument(QJsonObject{{"features", QJsonArray{"portrait_v1","vertical_studio_v1","vertical_crop_v1","main_picture_v1","vertical_canvas_v1"}}, {"outputs", outputs}, {"vertical_canvas",verticalCanvasTelemetry()}, {"main_output", mainTelemetry}, {"results", results}, {"audio", audioSnapshot()}}).toJson());
+        auto *reply = network.post(request, QJsonDocument(QJsonObject{{"features", QJsonArray{"portrait_v1","vertical_studio_v1","vertical_crop_v1","main_picture_v1","vertical_canvas_v1","recording_studio_v1"}}, {"recording",recordings.status(recordingCollection())}, {"outputs", outputs}, {"vertical_canvas",verticalCanvasTelemetry()}, {"main_output", mainTelemetry}, {"results", results}, {"audio", audioSnapshot()}}).toJson());
         pending = true;
         connect(reply, &QNetworkReply::finished, this, [this, reply, sentResults] {
             pending = false;
@@ -1606,6 +1640,7 @@ public:
                 for (int i = 0; i < sentResults && !results.isEmpty(); ++i) results.removeAt(0);
                 auto payload = QJsonDocument::fromJson(reply->readAll()).object();
                 std::atomic_store(&verticalStudioConfig,std::make_shared<const QJsonObject>(payload.value("vertical_studio").toObject()));
+                recordings.configure(payload.value("recording_studio").toObject());
                 updateInfo=payload.value("updates").toObject();
                 updateButton->setVisible(updateInfo.value("show_notice").toBool());
                 updateButton->setText("Update to "+updateInfo.value("latest").toObject().value("version").toString());
@@ -1744,6 +1779,7 @@ static void arrangeFDGCastDocks()
 }
 static void frontendEvent(enum obs_frontend_event event, void *)
 {
+    if(dock)dock->recordingEvent(event);
     if(event==OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGING){verticalCanvasLoading=true;verticalCanvas.reset();}
     if(event==OBS_FRONTEND_EVENT_FINISHED_LOADING||event==OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED)verticalCanvasLoading=false;
     if(event==OBS_FRONTEND_EVENT_FINISHED_LOADING || event==OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED ||
@@ -1775,6 +1811,7 @@ static void frontendEvent(enum obs_frontend_event event, void *)
 bool obs_module_load(void)
 {
     registerPortraitSource();
+    fdgcast::registerRecordingPicture();
     return true;
 }
 

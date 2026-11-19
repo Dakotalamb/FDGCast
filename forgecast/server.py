@@ -34,6 +34,7 @@ from .vertical import VerticalStudio, settings as vertical_settings, catalog as 
 from .entitlements import accept_entitlements, overlay_access
 from .overlay_studio import ACTIONS as STUDIO_ACTIONS, studio_action, studio_asset, studio_feed, designs
 from .platforms import PLATFORMS, CATALOG, require_picture_support
+from .recording import RecordingStudio, settings as recording_settings, catalog as recording_catalog, preview as recording_preview
 from .activity_status import activity_connection
 from .pc_health import PCMonitor, StreamOptimizer
 from .windows_tuning import options as optimizer_options, open_settings
@@ -87,6 +88,7 @@ class State:
         self.hub_events = []
         self.meta_chat = MetaChat(self)
         self.vertical = VerticalStudio(self)
+        self.recording = RecordingStudio(self)
         self.kick_after = 0
         self.lock = asyncio.Lock()
         self.optimizer_lock = asyncio.Lock()
@@ -235,7 +237,7 @@ class State:
                     native_connected=time.time()-self.native_seen < 5,
                     vertical_canvas={**self.native_canvas, 'available':'vertical_canvas_v1' in self.native_features} if time.time()-self.native_seen < 5 else {},
                     main_output=self.main_output if time.time()-self.native_seen < 5 else None,
-                    stats=self.stats, issues=self.current_issues, pc_health=self.pc_monitor.current, pc_issues=self.pc_issues, optimizer={**self.optimizer.public(), 'options':self.config.get('optimizer_options',optimizer_options())}, scene=self.scene,
+                    recording_studio=self.recording.public(), stats=self.stats, issues=self.current_issues, pc_health=self.pc_monitor.current, pc_issues=self.pc_issues, optimizer={**self.optimizer.public(), 'options':self.config.get('optimizer_options',optimizer_options())}, scene=self.scene,
                     audio_sound_custom=self.audio_sound_path.exists(), audio_guard=self.audio.current, audio_settings=self.audio.settings, audio_history=list(self.audio.history),
                     stream_history=self.history.public(), doctor_notifications=self.config.get("doctor_notifications", True), doctor_sound=self.config.get("doctor_sound",False), doctor_sensitivity=self.doctor.sensitivity,
                     output_errors=self.output_errors,
@@ -392,7 +394,14 @@ def preflight(s):
     checks.append({'label':'Encoder','result':'Active H.264/AAC encoder compatibility is checked when secondary outputs start; not verified offline.'})
     checks.append({'label':'Viewer picture / available upload','result':'Not measured. Check preview, platform dashboards and upload headroom.'})
     checks.append({'label':'Companion', 'result':'Running locally; OBS docks '+('connected' if native_fresh else 'not connected'), 'help_tab':'setup'})
-    checks.append({'label':'Recording', 'result':('Recording active.' if s.audio_snapshot.get('recording_active') else 'Recording expected but not active — start recording in OBS.') if s.config.get('recording_expected') and native_fresh and s.audio_snapshot and 'recording_active' in s.audio_snapshot else 'Recording expectation enabled; status unavailable.' if s.config.get('recording_expected') else 'Recording is optional; expectation is off.', 'help_tab':'live'})
+    studio_recording=native_fresh and any(r.get('state')=='recording' and r.get('active') for r in s.recording.telemetry.get('files',[]))
+    obs_recording=native_fresh and (s.audio_snapshot or {}).get('recording_active')
+    if not s.config.get('recording_expected'):recording_check='Recording is optional; expectation is off.'
+    elif studio_recording:recording_check='Recording Studio is recording. Check its file status before closing OBS.'
+    elif obs_recording:recording_check='OBS recording is active.'
+    elif native_fresh and (s.audio_snapshot or 'recording_studio_v1' in s.native_features):recording_check='Recording expected but not active — start a Recording Studio file or OBS recording.'
+    else:recording_check='Recording expectation enabled; status unavailable.'
+    checks.append({'label':'Recording', 'result':recording_check, 'help_tab':'recording'})
     checks.append({'label':'Recording storage', 'result':str(round(s.stats['availableDiskSpace']))+' MB reported by OBS; check your recording path.' if (s.demo or time.time()-s.stats_seen<8) and isinstance(s.stats.get('availableDiskSpace'), (int,float)) else 'Not reported by OBS; check free space at the recording location.', 'help_tab':'help'})
     selected = next((e for e in s.coordination()['events'] if e['id'] == s.config.get('selected_event_id')), None)
     checks.append({'label':'Hub event', 'result':selected['title']+' · '+selected['starts_at'] if selected else 'No event selected. This is optional.', 'help_tab':'hub'})
@@ -551,7 +560,7 @@ async def secure(request, handler):
 
 async def page(request):
     return web.FileResponse(WEB/({'/':'index.html', '/app.js':'app.js', '/style.css':'style.css',
-                                  '/studio-editor.js':'studio-editor.js', '/vertical-studio.js':'vertical-studio.js', '/favicon.png':'favicon.png'}[request.path]))
+                                  '/studio-editor.js':'studio-editor.js', '/vertical-studio.js':'vertical-studio.js', '/recording-studio.js':'recording-studio.js', '/favicon.png':'favicon.png'}[request.path]))
 
 
 async def platform_icon(request):
@@ -642,6 +651,8 @@ async def action(request):
             if len(s.commands)>=30: raise ValueError('Command queue is full.')
             s.commands.append(dict(id=uuid.uuid4().hex,action='vertical_canvas',enabled=data['enabled'],created=time.time()))
             return web.json_response({'ok':True,'pending':True})
+        if op in ('recording_save','recording_start','recording_stop','recording_stop_all','recording_folder'):
+            return web.json_response(await s.recording.action(data))
         if op == 'vertical_save': return web.json_response(await s.vertical.save(data))
         if op == 'vertical_reset':
             uid=data.get('scene_id'); value=vertical_settings(s)
@@ -884,7 +895,7 @@ async def native(request):
     data = await request.json()
     s.native_seen = time.time()
     features = data.get('features', [])
-    s.native_features = {v for v in ('portrait_v1','vertical_studio_v1','vertical_crop_v1','main_picture_v1','vertical_canvas_v1') if isinstance(features,list) and v in features}
+    s.native_features = {v for v in ('portrait_v1','vertical_studio_v1','vertical_crop_v1','main_picture_v1','vertical_canvas_v1','recording_studio_v1') if isinstance(features,list) and v in features}
     canvas = data.get('vertical_canvas')
     s.native_canvas = {k:canvas.get(k) is True for k in ('enabled','registered','selected','enhanced','twitch_main','busy')} if isinstance(canvas,dict) else {}
     if isinstance(canvas,dict) and canvas.get('error') in OUTPUT_ERRORS:
@@ -899,6 +910,7 @@ async def native(request):
         s.audio_snapshot = data['audio']
         s.audio_snapshot['sources'] = s.audio_snapshot.get('sources', [])[:128]
         s.audio_seen = time.time()
+    s.recording.accept(data.get('recording'),data.get('results',[])[:30])
     for result in data.get('results', [])[:30]:
         # Only codes are accepted; raw ingest error strings could reveal keys.
         code = str(result.get('status', 'unknown'))[:80]
@@ -912,7 +924,7 @@ async def native(request):
                 s.output_errors.pop(destination, None)
         if code.startswith('audio_'):
             s.audio.record('fix_result', result=code)
-        s.event('Stream output: '+OUTPUT_ERRORS.get(code, code.replace('_', ' ')))
+        s.event(('Recording Studio: ' if code.startswith('recording_') else 'Stream output: ')+OUTPUT_ERRORS.get(code, code.replace('_', ' ')))
     commands = []
     while s.commands:
         command = s.commands.popleft()
@@ -924,6 +936,7 @@ async def native(request):
     # its native chat and Stream Doctor docks over the authenticated loopback bridge.
     return web.json_response({
         'vertical_studio':vertical_settings(s),
+        'recording_studio':recording_settings(s),
         'destination_platforms': PLATFORMS, 'updates': s.updates.public(),
         'commands': commands, 'version':__version__, 'coordination':s.coordination(), 'output_presets':s.config.get('output_presets',{}), 'summaries':session_summaries(s), 'capabilities':chat_capabilities(s),
         'messages': [m for m in s.chat_view() if m.get('kind', 'chat') in {'chat','superchat','supersticker','membership'} or (s.config.get('merge_events') and m.get('kind') in set(s.config.get('event_kinds', DEFAULT_EVENTS)))][-200:],
@@ -1403,7 +1416,7 @@ def create_app(state):
     app['state'] = state
     app['web_path'] = WEB
     app.cleanup_ctx.append(lifecycle)
-    for path in ('/', '/app.js', '/studio-editor.js', '/vertical-studio.js', '/style.css', '/favicon.png'):
+    for path in ('/', '/app.js', '/studio-editor.js', '/vertical-studio.js', '/recording-studio.js', '/style.css', '/favicon.png'):
         app.router.add_get(path, page)
     app.router.add_get('/icons/{platform}.svg', platform_icon)
     app.router.add_get('/media/{key}', media)
@@ -1417,6 +1430,8 @@ def create_app(state):
     app.router.add_get('/overlay/feed', overlay_feed)
     app.router.add_get('/api/overlay-link', overlay_link)
     app.router.add_get('/api/state', get_state)
+    app.router.add_get('/api/recording', recording_catalog)
+    app.router.add_post('/api/recording/preview', recording_preview)
     app.router.add_get('/api/vertical', vertical_catalog)
     app.router.add_post('/api/vertical/preview', vertical_preview)
     app.router.add_get('/api/pairing', pairing)

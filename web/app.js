@@ -258,6 +258,7 @@ function connectionCard(platform,message){
 function render(s) {
  if(typeof renderStudio==='function')renderStudio(s);
  if(typeof renderVerticalStatus==='function')renderVerticalStatus(s);
+ if(typeof renderRecordingStatus==='function')renderRecordingStatus(s);
  renderDestinationCatalog(s.destination_platforms);
  state=s;
  $('rumbleChatStatus').textContent=s.statuses.rumble||'Not connected';
