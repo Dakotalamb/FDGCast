@@ -395,7 +395,7 @@ def preflight(s):
     checks.append({'label':'Viewer picture / available upload','result':'Not measured. Check preview, platform dashboards and upload headroom.'})
     checks.append({'label':'Companion', 'result':'Running locally; OBS docks '+('connected' if native_fresh else 'not connected'), 'help_tab':'setup'})
     studio_recording=native_fresh and any(r.get('state')=='recording' and r.get('active') for r in s.recording.telemetry.get('files',[]))
-    obs_recording=native_fresh and s.audio_snapshot.get('recording_active')
+    obs_recording=native_fresh and (s.audio_snapshot or {}).get('recording_active')
     if not s.config.get('recording_expected'):recording_check='Recording is optional; expectation is off.'
     elif studio_recording:recording_check='Recording Studio is recording. Check its file status before closing OBS.'
     elif obs_recording:recording_check='OBS recording is active.'
