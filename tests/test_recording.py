@@ -5,7 +5,7 @@ import time
 import unittest
 from unittest.mock import AsyncMock
 from aiohttp.test_utils import TestClient, TestServer
-from forgecast.server import State, create_app
+from forgecast.server import State, create_app, preflight
 from forgecast.recording import directory, profile
 
 
@@ -104,3 +104,12 @@ class RecordingTests(unittest.IsolatedAsyncioTestCase):
         self.s.native_seen=0
         with self.assertRaisesRegex(ValueError,'offline'):await self.s.recording.action(dict(op='recording_stop_all'))
         self.assertFalse(self.s.recording.public()['connected'])
+
+    async def test_preflight_recognizes_studio_recording_and_expires_old_status(self):
+        self.s.config['recording_expected']=True
+        self.s.recording.accept(dict(files=[dict(state='recording',active=True)]),[])
+        check=next(r for r in preflight(self.s) if r['label']=='Recording')
+        self.assertIn('Recording Studio is recording',check['result']);self.assertEqual(check['help_tab'],'recording')
+        self.s.native_seen=0
+        check=next(r for r in preflight(self.s) if r['label']=='Recording')
+        self.assertIn('unavailable',check['result'])

@@ -394,7 +394,14 @@ def preflight(s):
     checks.append({'label':'Encoder','result':'Active H.264/AAC encoder compatibility is checked when secondary outputs start; not verified offline.'})
     checks.append({'label':'Viewer picture / available upload','result':'Not measured. Check preview, platform dashboards and upload headroom.'})
     checks.append({'label':'Companion', 'result':'Running locally; OBS docks '+('connected' if native_fresh else 'not connected'), 'help_tab':'setup'})
-    checks.append({'label':'Recording', 'result':('Recording active.' if s.audio_snapshot.get('recording_active') else 'Recording expected but not active — start recording in OBS.') if s.config.get('recording_expected') and native_fresh and s.audio_snapshot and 'recording_active' in s.audio_snapshot else 'Recording expectation enabled; status unavailable.' if s.config.get('recording_expected') else 'Recording is optional; expectation is off.', 'help_tab':'live'})
+    studio_recording=native_fresh and any(r.get('state')=='recording' and r.get('active') for r in s.recording.telemetry.get('files',[]))
+    obs_recording=native_fresh and s.audio_snapshot.get('recording_active')
+    if not s.config.get('recording_expected'):recording_check='Recording is optional; expectation is off.'
+    elif studio_recording:recording_check='Recording Studio is recording. Check its file status before closing OBS.'
+    elif obs_recording:recording_check='OBS recording is active.'
+    elif native_fresh and (s.audio_snapshot or 'recording_studio_v1' in s.native_features):recording_check='Recording expected but not active — start a Recording Studio file or OBS recording.'
+    else:recording_check='Recording expectation enabled; status unavailable.'
+    checks.append({'label':'Recording', 'result':recording_check, 'help_tab':'recording'})
     checks.append({'label':'Recording storage', 'result':str(round(s.stats['availableDiskSpace']))+' MB reported by OBS; check your recording path.' if (s.demo or time.time()-s.stats_seen<8) and isinstance(s.stats.get('availableDiskSpace'), (int,float)) else 'Not reported by OBS; check free space at the recording location.', 'help_tab':'help'})
     selected = next((e for e in s.coordination()['events'] if e['id'] == s.config.get('selected_event_id')), None)
     checks.append({'label':'Hub event', 'result':selected['title']+' · '+selected['starts_at'] if selected else 'No event selected. This is optional.', 'help_tab':'hub'})
