@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const {doctorSummary}=require('../web/doctor-summary.js');
+const good={demo:false,obs_connected:true,native_connected:true,stats_connected:true,pc_health:{available:true,sampled_at:100,cpu_percent:30,memory_percent:40,gpu:{busy_percent:50}},audio_guard:{state:'watching',issues:[]},main_output:{id:'main',name:'Twitch',transmission_state:'sending'},outputs:[],issues:[],pc_issues:[]};
+assert.equal(doctorSummary(good,105).tone,'good');
+assert.equal(doctorSummary({...good,demo:true},105).title,'Demo — connect OBS for a real check');
+const lost=doctorSummary({...good,native_connected:false,stats_connected:false,pc_health:{...good.pc_health,sampled_at:80},issues:[{title:'Old problem'}],pc_issues:[{title:'Old PC problem'}],audio_guard:{issues:[{title:'Old audio problem'}]}},105);
+assert.equal(lost.items.length,0);assert.notEqual(lost.tone,'good');assert.ok(lost.gaps.includes('PC readings'));
+assert.notEqual(doctorSummary({...good,pc_health:{...good.pc_health,gpu:{}}},105).tone,'good');
+assert.notEqual(doctorSummary({...good,audio_guard:{state:'paused'}},105).tone,'good');
+assert.equal(doctorSummary({...good,main_output:null},105).title,'Ready for your next stream');
+assert.equal(doctorSummary({...good,incidents:[{title:'Old incident'}],stream_history:{issues:[{title:'Old history'}]}},105).items.length,0);
+const bad=doctorSummary({...good,optimizer:{pending_restore:true},main_output:{id:'main',name:'Twitch',transmission_state:'stalled'},audio_guard:{state:'warning',issues:[{code:'muted',title:'Microphone is muted',source_uuid:'mic',evidence:'Muted for 30 seconds.'}]},pc_issues:[{code:'pc_gpu',title:'GPU is nearly fully used',suggestion:'Limit game FPS.'}]},105);
+assert.deepEqual(bad.items.map(i=>i.area),['profile','outputs','audio','pc']);assert.equal(bad.tone,'warning');assert.match(bad.items[2].next,/audio checks/);
+console.log('PASS: Doctor summary distinguishes demo, stale/missing/partial checks, idle/live, current problems and pending restore without claiming proven causes.');

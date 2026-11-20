@@ -1,17 +1,15 @@
-# FDGCast 1.0.6
+# FDGCast 1.0.7
 
-[Download the stable Windows release](https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.6).
+[Download the stable Windows release](https://github.com/Dakotalamb/FDGCast/releases/tag/v1.0.7).
 
-Recording Studio saves a different picture from your live stream using existing OBS
-sources. Choose a preset, adjust the preview, then save and record. Same-picture
-recordings can share an active compatible stream encoder; different pictures need
-extra rendering/encoding. One file is the default, with optional extra files and
-separate OBS audio tracks under advanced options. Recording Studio is free.
+Stream Doctor now starts with a clear current status, problems that need attention,
+and a practical next step. CPU, GPU and memory stay visible. Detailed evidence,
+settings, history and reports are expandable. Missing readings are labelled
+unavailable rather than treated as a healthy stream.
 
-Read [release notes](docs/RELEASE_1.0.6.md) and
-[Recording Studio setup](docs/RECORDING-STUDIO.md). Previous Stream Doctor and
-[Windows streaming profile features](docs/STREAM_DOCTOR_PC.md) are included.
-Close OBS and Companion before installation. Repository: **Dakotalamb/FDGCast**.
+Read [release notes](docs/RELEASE_1.0.7.md). [Recording Studio](docs/RECORDING-STUDIO.md),
+multistream, chat and Windows streaming profile features remain included.
+Close OBS and Companion before installation.
 Earlier version notes below are historical.
 
 ## Stable 1.0.4 — activity connection visibility and licensing
