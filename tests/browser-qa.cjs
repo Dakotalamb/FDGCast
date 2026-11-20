@@ -79,12 +79,16 @@ async function main(){
   assert.equal(await page.locator('#destinationForm input[name=server]').isVisible(),false);
   assert.equal(await page.locator('#destinationForm input[name=server]').getAttribute('required'),null);
   await page.locator('[data-tab="doctor"]').click();
+  assert.equal(await page.locator('#streamTimeline').isVisible(),false);
+  assert.equal(await page.locator('#copyReport').isVisible(),false);
+  await page.locator('#doctorMore').click();
   assert.equal(await page.locator('#streamTimeline').isVisible(),true);
   assert.equal(await page.locator('#copyReport').isVisible(),true);
   assert.equal(await page.locator('#testAudioNotification').count(),1);
   assert.equal(await page.locator('#testAudioSound').count(),1);
   assert.equal(await page.locator('#audioCustomWav').count(),1);
   assert.equal(await page.locator('#audioSoundVolume').getAttribute('value'),'45');
+  await page.locator('#doctorMore').click();
   await page.screenshot({path:path.join(output,'doctor-demo.png'),fullPage:true});
   await page.locator('[data-tab="setup"]').click();
   assert.equal(await page.locator('#rumbleForm input[name=api_url]').getAttribute('type'),'password');
