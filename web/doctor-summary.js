@@ -26,7 +26,15 @@
   const model=doctorSummary(s),get=id=>document.getElementById(id),make=(tag,value,cls)=>{const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;};
   get('doctorSummary').dataset.tone=model.tone;get('doctorTitle').textContent=model.title;get('doctorIntro').textContent=model.body;
   get('doctorCoverage').textContent=model.items.length&&model.gaps.length?'Also unable to check: '+model.gaps.join(', ')+'.':'';
-  get('doctorConnect').hidden=!!s.obs_connected&&!!s.native_connected;
+  const guide=get('doctorConnect');guide.hidden=!s.demo&&!model.gaps.length;
+  const connection=s.demo||!s.obs_connected||!s.native_connected||!s.stats_connected;
+  const audioGap=model.gaps.includes('audio checks');
+  guide.textContent=connection?'Check OBS connections':audioGap?'Set up audio checks':'Show PC check details';
+  guide.onclick=()=>{
+   if(connection){openTab('setup');return;}
+   if(audioGap){get('doctorDetails').open=true;get('doctorAudio').open=true;get('audioForm').closest('details').open=true;get('doctorAudio').scrollIntoView({behavior:'smooth',block:'start'});}
+   else{get('pcTechnical').open=true;get('pcTechnical').scrollIntoView({behavior:'smooth',block:'start'});}
+  };
   get('doctorMore').textContent=model.items.length>3?'See all '+model.items.length+' items and detailed checks':'More checks, history & reports';
   const signature=JSON.stringify(model.items);if(get('doctorActions').dataset.signature!==signature){
    const opened=new Set([...get('doctorActions').querySelectorAll('details[open]')].map(e=>e.dataset.key));
