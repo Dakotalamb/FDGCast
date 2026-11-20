@@ -208,7 +208,7 @@ function renderPC(s){
  const pc=s.pc_health||{}, fresh=pc.available&&Date.now()/1000-pc.sampled_at<10;
  $('pcMonitorState').textContent=fresh?'MONITORING':'UNAVAILABLE';
  const percent=value=>Number.isFinite(value)?value.toFixed(1)+'%':'Unavailable';
- const metrics=[['CPU · whole PC',fresh?percent(pc.cpu_percent):'Unavailable','Combined CPU usage of all apps. First reading needs one sampling interval.'],['GPU · busiest engine',fresh?percent(pc.gpu?.busy_percent):'Unavailable','Busiest physical GPU engine, including game, encoding and copy work.'],['Memory · whole PC',fresh?percent(pc.memory_percent):'Unavailable','Memory in use across Windows and all apps.']];
+ const metrics=[['CPU',fresh?percent(pc.cpu_percent):'Unavailable','Combined CPU usage of all apps. First reading needs one sampling interval.'],['GPU',fresh?percent(pc.gpu?.busy_percent):'Unavailable','Busiest physical GPU engine, including game, encoding and copy work.'],['Memory',fresh?percent(pc.memory_percent):'Unavailable','Memory in use across Windows and all apps.']];
  $('pcMetrics').replaceChildren(...metrics.map(([label,value,tip])=>{const card=el('div',undefined,'pc-metric');card.title=tip;card.append(el('strong',label),el('p',value));if(label.startsWith('Memory')&&fresh)card.append(el('small',pc.memory_used_gb+' / '+pc.memory_total_gb+' GB'));return card;}));
  const findings=fresh?(s.pc_issues||[]):[];
  $('pcFindings').replaceChildren(...(findings.length?findings.map(issue):[el('p',fresh?'No sustained PC resource pressure detected. Check destination health and Audio Guard below, too.':pc.message||'Waiting for PC measurements.','muted')]));
@@ -218,6 +218,7 @@ function renderPC(s){
  const optimizer=s.optimizer||{};$('optimizerStatus').textContent=optimizer.message||'Off. No PC settings changed.';
  $('optimizerStart').disabled=!optimizer.supported||optimizer.enabled||optimizer.pending_restore;
  $('optimizerRestore').disabled=!optimizer.enabled&&!optimizer.pending_restore;
+ $('optimizerRestore').hidden=!optimizer.enabled&&!optimizer.pending_restore;
  const choices={optimizerPriority:'priority',optimizerAnimations:'animations',optimizerPower:'power',optimizerGameMode:'game_mode'};
  for(const [id,key] of Object.entries(choices)){if(!optimizerChoicesInitialized)$(id).checked=(optimizer.options||{priority:true,animations:true})[key]===true;$(id).disabled=!optimizer.supported||optimizer.enabled||optimizer.pending_restore;}
  optimizerChoicesInitialized=true;
@@ -281,6 +282,7 @@ function render(s) {
  $('health').replaceChildren(...((s.issues.length||s.pc_issues?.length||s.stream_history?.issues?.length)?[...(s.stream_history?.issues||[]),...(s.pc_issues?.length?s.pc_issues:s.issues)].map(issue):[el('p',s.obs_connected?'No new frame-loss counters in the latest sample. This does not verify your whole stream.':'Connect OBS for live measurements.',s.obs_connected?'ok':'muted')]));
  $('statuses').replaceChildren(...Object.entries(s.statuses).map(([k,v])=>connectionCard(k,v)));
  renderPC(s);
+ if(typeof renderDoctorSummary==='function')renderDoctorSummary(s);
  renderMainStream(s);
  renderSuite(s);
  $('chatConnectionStatus').replaceChildren(...Object.entries(s.statuses).map(([k,v])=>connectionCard(k,v)));

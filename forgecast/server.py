@@ -560,7 +560,7 @@ async def secure(request, handler):
 
 async def page(request):
     return web.FileResponse(WEB/({'/':'index.html', '/app.js':'app.js', '/style.css':'style.css',
-                                  '/studio-editor.js':'studio-editor.js', '/vertical-studio.js':'vertical-studio.js', '/recording-studio.js':'recording-studio.js', '/favicon.png':'favicon.png'}[request.path]))
+                                  '/studio-editor.js':'studio-editor.js', '/vertical-studio.js':'vertical-studio.js', '/doctor-summary.js':'doctor-summary.js', '/recording-studio.js':'recording-studio.js', '/favicon.png':'favicon.png'}[request.path]))
 
 
 async def platform_icon(request):
@@ -1416,7 +1416,7 @@ def create_app(state):
     app['state'] = state
     app['web_path'] = WEB
     app.cleanup_ctx.append(lifecycle)
-    for path in ('/', '/app.js', '/studio-editor.js', '/vertical-studio.js', '/recording-studio.js', '/style.css', '/favicon.png'):
+    for path in ('/', '/app.js', '/studio-editor.js', '/vertical-studio.js', '/recording-studio.js', '/doctor-summary.js', '/style.css', '/favicon.png'):
         app.router.add_get(path, page)
     app.router.add_get('/icons/{platform}.svg', platform_icon)
     app.router.add_get('/media/{key}', media)
