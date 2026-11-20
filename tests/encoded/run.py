@@ -59,7 +59,8 @@ def run(exe,runtime,out,mode):
         deadline=time.monotonic()+60
         while time.monotonic()<deadline:
             line=lines.get(timeout=max(.1,deadline-time.monotonic()))
-            if line==expected:return
+            # libobs worker threads can append log text to a completion marker.
+            if expected in line:return
             if line=='EXIT':raise RuntimeError(f'Native process exited before {expected}; see {mode}-libobs.log')
         raise TimeoutError(expected)
     result=[]

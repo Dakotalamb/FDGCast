@@ -26,7 +26,8 @@ def main():
         deadline=time.monotonic()+90
         while True:
             line=lines.get(timeout=max(.1,deadline-time.monotonic()))
-            if line==expected:return
+            # libobs worker threads can append log text to a completion marker.
+            if expected in line:return
             if line=='EXIT' or time.monotonic()>deadline:raise RuntimeError('Native recording test did not reach '+expected)
     receiver=None;error=None
     try:
