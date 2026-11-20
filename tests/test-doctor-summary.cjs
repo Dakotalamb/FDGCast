@@ -9,6 +9,8 @@ assert.notEqual(doctorSummary({...good,pc_health:{...good.pc_health,gpu:{}}},105
 assert.notEqual(doctorSummary({...good,audio_guard:{state:'paused'}},105).tone,'good');
 assert.equal(doctorSummary({...good,main_output:null},105).title,'Ready for your next stream');
 assert.equal(doctorSummary({...good,incidents:[{title:'Old incident'}],stream_history:{issues:[{title:'Old history'}]}},105).items.length,0);
+assert.equal(doctorSummary({...good,output_errors:{yt:'Encoder failed'},destinations:[{id:'yt',name:'YouTube'}]},105).items[0].title,'YouTube needs checking');
+assert.equal(doctorSummary({...good,native_connected:false,output_errors:{yt:'Old failure'},destinations:[{id:'yt',name:'YouTube'}]},105).items.length,0);
 const bad=doctorSummary({...good,optimizer:{pending_restore:true},main_output:{id:'main',name:'Twitch',transmission_state:'stalled'},audio_guard:{state:'warning',issues:[{code:'muted',title:'Microphone is muted',source_uuid:'mic',evidence:'Muted for 30 seconds.'}]},pc_issues:[{code:'pc_gpu',title:'GPU is nearly fully used',suggestion:'Limit game FPS.'}]},105);
 assert.deepEqual(bad.items.map(i=>i.area),['profile','outputs','audio','pc']);assert.equal(bad.tone,'warning');assert.match(bad.items[2].next,/audio checks/);
 console.log('PASS: Doctor summary distinguishes demo, stale/missing/partial checks, idle/live, current problems and pending restore without claiming proven causes.');

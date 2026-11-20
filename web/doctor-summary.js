@@ -9,6 +9,10 @@
    const t=o.transmission_state;
    if(['stalled','reconnecting','error'].includes(t))add({code:o.id,title:(o.name||'A destination')+(t==='reconnecting'?' is reconnecting':t==='stalled'?' has stopped sending data':' could not start'),suggestion:'Open Destinations and check this output before restarting it.',evidence:o.detail||o.error||''},'outputs');
   }
+  if(native)for(const [id,error] of Object.entries(s.output_errors||{})){
+   const destination=(s.destinations||[]).find(d=>d.id===id);
+   if(error&&destination)add({code:id,title:destination.name+' needs checking',suggestion:'Open Destinations and check this output before starting it again.',evidence:String(error)},'outputs');
+  }
   if(native)for(const i of audio.issues||[])add(i,'audio');
   if(stats)for(const i of s.issues||[])add(i,'performance');
   if(pcFresh)for(const i of s.pc_issues||[])add(i,'pc');
